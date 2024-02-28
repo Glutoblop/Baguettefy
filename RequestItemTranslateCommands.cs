@@ -9,17 +9,16 @@ namespace Baguettefy
     {
         static HttpClient client = new HttpClient();
 
-        [SlashCommand("baugettefy", "Get the French name for a given English item's name.", runMode: RunMode.Async)]
-        public async Task Baugettefy(string name)
+        [SlashCommand("baguettefy", "Get the French name for a given English item's name.", runMode: RunMode.Async)]
+        public async Task GetEnglishName(string name)
         {
             await DeferAsync(true);
             try
             {
-
-                var english_search_url = $"https://api.dofusdu.de/dofus2/en/items/search?query={name}&limit=1";
+                var french_search_url = $"https://api.dofusdu.de/dofus2/fr/items/search?query={name}&limit=1";
 
                 Item? search_item = null;
-                HttpResponseMessage response = await client.GetAsync(english_search_url);
+                HttpResponseMessage response = await client.GetAsync(french_search_url);
                 if (response.IsSuccessStatusCode)
                 {
                     string data = await response.Content.ReadAsStringAsync();
@@ -88,15 +87,15 @@ namespace Baguettefy
 
                 var embedBuilder = new EmbedBuilder()
                 {
-                    Title = $"{french_item.Name}",
-                    ThumbnailUrl = french_item.ImageUrls.Icon?.AbsoluteUri,
+                    Title = $"{english_item.Name}",
+                    ThumbnailUrl = english_item.ImageUrls.Icon?.AbsoluteUri,
                 };
 
                 embedBuilder.WithFields(new[]
                 {
                 new EmbedFieldBuilder()
                     .WithName($"Name")
-                    .WithValue($"{english_item.Name}")
+                    .WithValue($"{french_item.Name}")
                     .WithIsInline(false),
 
                 new EmbedFieldBuilder()
