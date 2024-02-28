@@ -2,10 +2,6 @@
 using Baguettefy.Data;
 using Discord;
 using Newtonsoft.Json;
-using System.Reactive;
-using System.Reflection.Emit;
-using System.Security.Claims;
-using System.Xml.Linq;
 
 namespace Baguettefy
 {

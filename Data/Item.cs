@@ -2,7 +2,7 @@
 
 namespace Baguettefy.Data
 {
-    public partial class Item
+    public class Item
     {
         [JsonProperty("ankama_id")]
         public long AnkamaId { get; set; }
@@ -35,7 +35,7 @@ namespace Baguettefy.Data
         public Recipe[] Recipe { get; set; }
     }
 
-    public partial class Effect
+    public class Effect
     {
         [JsonProperty("int_minimum")]
         public long IntMinimum { get; set; }
@@ -56,7 +56,7 @@ namespace Baguettefy.Data
         public string Formatted { get; set; }
     }
 
-    public partial class EffectType
+    public class EffectType
     {
         [JsonProperty("name")]
         public string Name { get; set; }
@@ -71,7 +71,7 @@ namespace Baguettefy.Data
         public bool IsActive { get; set; }
     }
 
-    public partial class ImageUrls
+    public class ImageUrls
     {
         [JsonProperty("icon")]
         public Uri Icon { get; set; }
@@ -86,7 +86,7 @@ namespace Baguettefy.Data
         public Uri Hd { get; set; }
     }
 
-    public partial class Recipe
+    public class Recipe
     {
         [JsonProperty("item_ankama_id")]
         public long ItemAnkamaId { get; set; }
@@ -98,7 +98,7 @@ namespace Baguettefy.Data
         public long Quantity { get; set; }
     }
 
-    public partial class ItemType
+    public class ItemType
     {
         [JsonProperty("name")]
         public string Name { get; set; }

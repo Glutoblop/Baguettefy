@@ -227,3 +227,4 @@ AppPackages/
 /bin
 /config.yml
 /config.json
+/Scripts/config.json
