@@ -21,31 +21,42 @@ namespace Baguettefy
         {
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Utc };
 
-            var config = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
-                .AddJsonFile("config.json")
-                .Build();
-
-            using IHost host = Host.CreateDefaultBuilder()
-                .ConfigureServices((_, services) => services
-                .AddSingleton(config)
-                .AddSingleton(x => new DiscordSocketClient(new DiscordSocketConfig
+            while (true)
+            {
+                try
                 {
-                    GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent,
-                    AlwaysDownloadUsers = true
-                }))
-                .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(),
-                    new InteractionServiceConfig() { DefaultRunMode = RunMode.Async }))
-                .AddSingleton<InteractionHandler>()
-                .AddSingleton<PrefixHandler>()
-                .AddSingleton(x => new CommandService(new CommandServiceConfig()
-                {
-                    DefaultRunMode = Discord.Commands.RunMode.Async
-                }))
-                .AddSingleton<ILogger>(s => new ConsoleLogger(ConstantData.LogType))
-                ).Build();
+                    var config = new ConfigurationBuilder()
+                        .SetBasePath(AppContext.BaseDirectory)
+                        .AddJsonFile("config.json")
+                        .Build();
 
-            await RunAsync(host);
+                    using IHost host = Host.CreateDefaultBuilder()
+                        .ConfigureServices((_, services) => services
+                            .AddSingleton(config)
+                            .AddSingleton(x => new DiscordSocketClient(new DiscordSocketConfig
+                            {
+                                GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent,
+                                AlwaysDownloadUsers = true
+                            }))
+                            .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(),
+                                new InteractionServiceConfig() { DefaultRunMode = RunMode.Async }))
+                            .AddSingleton<InteractionHandler>()
+                            .AddSingleton<PrefixHandler>()
+                            .AddSingleton(x => new CommandService(new CommandServiceConfig()
+                            {
+                                DefaultRunMode = Discord.Commands.RunMode.Async
+                            }))
+                            .AddSingleton<ILogger>(s => new ConsoleLogger(ConstantData.LogType))
+                        ).Build();
+
+                    await RunAsync(host);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Big crash: {e}");
+                    Console.WriteLine($"Attempting restart..");
+                }
+            }
         }
 
         public async Task RunAsync(IHost host)
@@ -60,7 +71,7 @@ namespace Baguettefy
             await services.GetRequiredService<InteractionHandler>().InitialiseAsync();
             var pCommands = services.GetRequiredService<PrefixHandler>();
             await pCommands.InitialiseAsync();
-            
+
             client.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Log: {msg}"); };
             sCommands.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Interaction: {msg}"); };
 
