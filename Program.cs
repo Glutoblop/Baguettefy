@@ -15,6 +15,8 @@ namespace Baguettefy
 {
     public class Program
     {
+        private static bool clientReady = false;
+
         public static Task Main() => new Program().MainAsync();
 
         public async Task MainAsync()
@@ -75,9 +77,9 @@ namespace Baguettefy
             client.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Log: {msg}"); };
             sCommands.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Interaction: {msg}"); };
 
-            var clientReady = false;
             client.Ready += async () =>
             {
+                if (clientReady) return;
                 Console.WriteLine($"Bot is ready.");
 
                 foreach (var guild in client.Guilds)
