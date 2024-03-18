@@ -79,8 +79,8 @@ namespace Baguettefy
 
             client.Ready += async () =>
             {
-                if (clientReady) return;
                 Console.WriteLine($"Bot is ready.");
+                if (clientReady) return;
 
                 foreach (var guild in client.Guilds)
                 {
@@ -103,6 +103,7 @@ namespace Baguettefy
 
             client.GuildAvailable += async guild =>
             {
+                Console.WriteLine($"Guild available");
                 if (!clientReady) return;
                 await sCommands.RegisterCommandsToGuildAsync(guild.Id);
             };
