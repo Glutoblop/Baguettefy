@@ -9,7 +9,7 @@ namespace Baguettefy
     {
         static HttpClient client = new HttpClient();
 
-        [SlashCommand("baguettefy", "Get the French name for a given English item's name.", runMode: RunMode.Async)]
+        [SlashCommand("translate_item", "Search the French name of an item, returns the English info.", runMode: RunMode.Async)]
         public async Task GetEnglishName(string name)
         {
             await DeferAsync(true);
