@@ -29,49 +29,69 @@ namespace Baguettefy.Cache
             if (!localCacheName.EndsWith("/")) localCacheName += "/";
             _BaseDirectory = localCacheName;
 
+            DateTime now = DateTime.UtcNow;
+
             var completeData = await GetAsync<CacheComplete>($"Complete");
             if (completeData?.IsComplete ?? false) return;
 
-            QuestsData found = null;
-
-            for (int skip = 0; skip < 10; skip++)
+            //Categories contain types of quests, loop through these
+            for (int category = 2; category < 100; category++)
             {
-                for (int catId = 2; catId < 100; catId++)
+                var pageMissingCount = 0;
+                Console.WriteLine($"#### Search Category {category}...");
+                await Task.Delay(100);
+
+                //Loop through the pages in this category
+                for (int page = 0; page < 10; page++)
                 {
+
                     var url = $"https://api.dofusdb.fr/quests?$";
-                    var skipStartIndex = skip * 50;
-                    var allQuestsUrl = $"{url}skip={skipStartIndex}&$populate=true&$limit=50&categoryId={catId}&lang=en";
+                    var skipStartIndex = page * 50;
+                    var allQuestsUrl = $"{url}skip={skipStartIndex}&$populate=true&$limit=50&categoryId={category}&lang=en";
                     //allQuestsUrl = $"https://api.dofusdb.fr/quests?$skip=0&$populate=true&$limit=50&categoryId=4&lang=en";
 
-                    QuestsData? allQuests = null;
                     HttpResponseMessage response = await client.GetAsync(allQuestsUrl);
                     if (response.IsSuccessStatusCode)
                     {
-                        string data = await response.Content.ReadAsStringAsync();
-                        allQuests = JsonConvert.DeserializeObject<QuestsData>(data);
-                    }
+                        string json = await response.Content.ReadAsStringAsync();
+                        QuestsData? allQuests = JsonConvert.DeserializeObject<QuestsData>(json);
 
-                    if (allQuests?.Quests != null)
-                    {
-                        foreach (var quest in allQuests?.Quests)
+                        if (allQuests?.Quests?.Length > 0)
                         {
-                            var data = await GetAsync<Quest>($"Quest/{quest.Id}");
-                            if (data == null)
+                            pageMissingCount = 0;
+
+                            foreach (var quest in allQuests?.Quests)
                             {
-                                await PutAsync($"Quest/{quest.Id}", quest);
+                                var data = await GetAsync<Quest>($"Quest/{quest.Id}");
+                                if (data == null)
+                                {
+                                    await PutAsync($"Quest/{quest.Id}", quest);
+
+                                    Console.WriteLine($"{quest.Name.En} added to cached [{quest.Id}]");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"{quest.Name.En} already cached [{quest.Id}]");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"No data found for category:{category} page:{page}");
+                            pageMissingCount++;
+                            if (pageMissingCount > 2)
+                            {
+                                Console.WriteLine($"Assuming end of Category, skipping to next.");
+                                break;
                             }
                         }
                     }
 
-
-                    await Task.Delay(150);
-                }
-
-                if (found != null)
-                {
-                    break;
+                    await Task.Delay(350);
                 }
             }
+
+            Console.WriteLine($"Completed in :{DateTime.UtcNow - now:g}");
 
             await PutAsync($"Complete", new CacheComplete() { IsComplete = true });
 
