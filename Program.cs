@@ -1,4 +1,5 @@
-﻿using Baguettefy.Core;
+﻿using Baguettefy.Cache;
+using Baguettefy.Core;
 using Baguettefy.Core.Interfaces;
 using Baguettefy.Core.Logging;
 using Discord;
@@ -49,6 +50,7 @@ namespace Baguettefy
                                 DefaultRunMode = Discord.Commands.RunMode.Async
                             }))
                             .AddSingleton<ILogger>(s => new ConsoleLogger(ConstantData.LogType))
+                            .AddSingleton<OfflineCache>(s => new OfflineCache())
                         ).Build();
 
                     await RunAsync(host);
@@ -73,6 +75,9 @@ namespace Baguettefy
             await services.GetRequiredService<InteractionHandler>().InitialiseAsync();
             var pCommands = services.GetRequiredService<PrefixHandler>();
             await pCommands.InitialiseAsync();
+
+            var cache = services.GetRequiredService<OfflineCache>();
+            await cache.Init();
 
             client.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Log: {msg}"); };
             sCommands.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Interaction: {msg}"); };

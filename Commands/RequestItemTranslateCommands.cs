@@ -1,9 +1,9 @@
-﻿using Discord.Interactions;
-using Baguettefy.Data;
+﻿using Baguettefy.Data.Items;
+using Discord.Interactions;
 using Discord;
 using Newtonsoft.Json;
 
-namespace Baguettefy
+namespace Baguettefy.Commands
 {
     public class RequestItemTranslateCommands : InteractionModuleBase<InteractionContext>
     {

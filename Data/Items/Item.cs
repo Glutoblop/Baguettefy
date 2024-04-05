@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Baguettefy.Data
+namespace Baguettefy.Data.Items
 {
     public class Item
     {
