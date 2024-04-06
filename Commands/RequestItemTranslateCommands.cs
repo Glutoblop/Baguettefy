@@ -9,16 +9,32 @@ namespace Baguettefy.Commands
     {
         static HttpClient client = new HttpClient();
 
-        [SlashCommand("translate_item", "Search the French name of an item, returns the English info.", runMode: RunMode.Async)]
-        public async Task GetEnglishName(string name)
+        public enum ELanguage
+        {
+            French,
+            English
+        }
+
+        [SlashCommand("translate_item", "Search the name of an item either French/English, return info.", runMode: RunMode.Async)]
+        public async Task GetItemName(string name, ELanguage inputLanguage = ELanguage.French)
+        {
+            await TranslateItem(name, inputLanguage == ELanguage.English);
+        }
+
+
+        private async Task TranslateItem(string name, bool isEnglish)
         {
             await DeferAsync(true);
+
+            string incomingLang = isEnglish ? "en" : "fr";
+            string otherLang = !isEnglish ? "en" : "fr";
+
             try
             {
-                var french_search_url = $"https://api.dofusdu.de/dofus2/fr/items/search?query={name}&limit=1";
+                var initial_search_url = $"https://api.dofusdu.de/dofus2/{incomingLang}/items/search?query={name}&limit=1";
 
                 Item? search_item = null;
-                HttpResponseMessage response = await client.GetAsync(french_search_url);
+                HttpResponseMessage response = await client.GetAsync(initial_search_url);
                 if (response.IsSuccessStatusCode)
                 {
                     string data = await response.Content.ReadAsStringAsync();
@@ -46,17 +62,17 @@ namespace Baguettefy.Commands
                     _ => ""
                 };
 
-                var english_url = $"https://api.dofusdu.de/dofus2/en/{itemType}/{search_item.AnkamaId}";
+                var detail_url = $"https://api.dofusdu.de/dofus2/{otherLang}/{itemType}/{search_item.AnkamaId}";
 
-                Item? english_item = null;
-                HttpResponseMessage english_response = await client.GetAsync(english_url);
+                Item? detail_item = null;
+                HttpResponseMessage detail_response = await client.GetAsync(detail_url);
                 if (response.IsSuccessStatusCode)
                 {
-                    string data = await english_response.Content.ReadAsStringAsync();
-                    english_item = JsonConvert.DeserializeObject<Item>(data);
+                    string data = await detail_response.Content.ReadAsStringAsync();
+                    detail_item = JsonConvert.DeserializeObject<Item>(data);
                 }
 
-                if (english_item == null)
+                if (detail_item == null)
                 {
                     await ModifyOriginalResponseAsync(properties =>
                     {
@@ -66,17 +82,17 @@ namespace Baguettefy.Commands
                 }
 
 
-                var french_url = $"https://api.dofusdu.de/dofus2/fr/{itemType}/{search_item.AnkamaId}";
+                var alt_url = $"https://api.dofusdu.de/dofus2/{incomingLang}/{itemType}/{search_item.AnkamaId}";
 
-                Item? french_item = null;
-                HttpResponseMessage french_response = await client.GetAsync(french_url);
+                Item? alt_item = null;
+                HttpResponseMessage alt_response = await client.GetAsync(alt_url);
                 if (response.IsSuccessStatusCode)
                 {
-                    string data = await french_response.Content.ReadAsStringAsync();
-                    french_item = JsonConvert.DeserializeObject<Item>(data);
+                    string data = await alt_response.Content.ReadAsStringAsync();
+                    alt_item = JsonConvert.DeserializeObject<Item>(data);
                 }
 
-                if (french_item == null)
+                if (alt_item == null)
                 {
                     await ModifyOriginalResponseAsync(properties =>
                     {
@@ -84,18 +100,26 @@ namespace Baguettefy.Commands
                     });
                     return;
                 }
+
+                var english_name = isEnglish ? search_item.Name : detail_item.Name;
+                var french_name = !isEnglish ? search_item.Name : detail_item.Name;
 
                 var embedBuilder = new EmbedBuilder()
                 {
-                    Title = $"{english_item.Name}",
-                    ThumbnailUrl = english_item.ImageUrls.Icon?.AbsoluteUri,
+                    Title = $"Search: '{name}' found..",
+                    ThumbnailUrl = detail_item.ImageUrls.Icon?.AbsoluteUri,
                 };
 
                 embedBuilder.WithFields(new[]
                 {
                 new EmbedFieldBuilder()
-                    .WithName($"Name")
-                    .WithValue($"{french_item.Name}")
+                    .WithName($"French Name")
+                    .WithValue($"{french_name}")
+                    .WithIsInline(false),
+
+                new EmbedFieldBuilder()
+                    .WithName($"English Name")
+                    .WithValue($"{english_name}")
                     .WithIsInline(false),
 
                 new EmbedFieldBuilder()
@@ -105,7 +129,7 @@ namespace Baguettefy.Commands
 
                 new EmbedFieldBuilder()
                     .WithName($"Description")
-                    .WithValue($"{english_item.Description}")
+                    .WithValue($"{detail_item.Description}")
                     .WithIsInline(false)
 
             });
@@ -123,7 +147,8 @@ namespace Baguettefy.Commands
                     properties.Content = $" \ud83e\udd56 Non non Baguette \ud83e\udd56\nSomething went wrong :(";
                 });
             }
-
         }
+
+
     }
 }
