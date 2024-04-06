@@ -17,8 +17,8 @@ namespace Baguettefy.Commands
             _Services = services;
         }
 
-        [SlashCommand("translate_quest", "Search the French name of an item, returns the English info.", runMode: RunMode.Async)]
-        public async Task GetEnglishName(string name)
+        [SlashCommand("translate_quest", "Search a Quest either English or French.", runMode: RunMode.Async)]
+        public async Task TranslateQuest(string name)
         {
             await DeferAsync(true);
 
@@ -29,9 +29,19 @@ namespace Baguettefy.Commands
                 Quest? foundQuest = null;
                 await db.GetAllAsync<Quest>($"Quest", (path, item) =>
                 {
-                    if (!item.Name.En.ToLowerInvariant().Contains(name.ToLowerInvariant())) return false;
-                    foundQuest = item;
-                    return true;
+                    if (item.Name.En.ToLowerInvariant().Contains(name.ToLowerInvariant()))
+                    {
+                        foundQuest = item;
+                        return true;
+                    }
+
+                    if (item.Name.Fr.ToLowerInvariant().Contains(name.ToLowerInvariant()))
+                    {
+                        foundQuest = item;
+                        return true;
+                    }
+
+                    return false;
                 });
 
                 if (foundQuest == null)
