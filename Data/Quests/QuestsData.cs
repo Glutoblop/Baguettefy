@@ -26,6 +26,9 @@ namespace Baguettefy.Data.Quests
 
         [JsonProperty("steps")]
         public Step[] Steps { get; set; }
+
+        [JsonProperty("startCriterion")]
+        public string StartCriterion { get; set; }
     }
 
     public partial class Name

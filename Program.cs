@@ -50,7 +50,7 @@ namespace Baguettefy
                                 DefaultRunMode = Discord.Commands.RunMode.Async
                             }))
                             .AddSingleton<ILogger>(s => new ConsoleLogger(ConstantData.LogType))
-                            .AddSingleton<OfflineCache>(s => new OfflineCache())
+                            .AddSingleton<IFirebaseDatabase>(s => new CachedFirebaseDatabase(s))
                         ).Build();
 
                     await RunAsync(host);
@@ -76,8 +76,13 @@ namespace Baguettefy
             var pCommands = services.GetRequiredService<PrefixHandler>();
             await pCommands.InitialiseAsync();
 
-            var cache = services.GetRequiredService<OfflineCache>();
-            await cache.Init();
+            var updateDb = new UpdateDatabase();
+            await updateDb.Init("OfflineCache/");
+
+            var cache = services.GetRequiredService<IFirebaseDatabase>();
+            var databaseUrl = config["firebaseDatabaseUrl"];
+            var serviceAccount = config["firebaseServiceAccount"];
+            await cache.Init(databaseUrl, serviceAccount, TimeSpan.FromDays(60), true);
 
             client.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Log: {msg}"); };
             sCommands.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Interaction: {msg}"); };

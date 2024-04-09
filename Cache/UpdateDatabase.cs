@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Baguettefy.Cache
 {
-    public class OfflineCache
+    public class UpdateDatabase
     {
         private static readonly SemaphoreSlim _SemaphoreSlim = new SemaphoreSlim(1, 1);
 
@@ -48,7 +48,7 @@ namespace Baguettefy.Cache
                     var url = $"https://api.dofusdb.fr/quests?$";
                     var skipStartIndex = page * 50;
                     var allQuestsUrl = $"{url}skip={skipStartIndex}&$populate=true&$limit=50&categoryId={category}&lang=en";
-                    //allQuestsUrl = $"https://api.dofusdb.fr/quests?$skip=0&$populate=true&$limit=50&categoryId=4&lang=en";
+                    //allQuestsUrl = $"https://api.dofusdb.fr/quests?$skip=0&$populate=true&$limit=1&categoryId=4&lang=en";
 
                     HttpResponseMessage response = await client.GetAsync(allQuestsUrl);
                     if (response.IsSuccessStatusCode)
@@ -213,7 +213,7 @@ namespace Baguettefy.Cache
             if (path.Split("/").Length > 2 ||
                 path.Split("\\").Length > 2)
             {
-                // throw new NotSupportedException($"Error accessing: {path}. {nameof(OfflineCache)} only supports a flat Firebase structure, you cannot access sub-objects directly.");
+                // throw new NotSupportedException($"Error accessing: {path}. {nameof(UpdateDatabase)} only supports a flat Firebase structure, you cannot access sub-objects directly.");
             }
         }
     }

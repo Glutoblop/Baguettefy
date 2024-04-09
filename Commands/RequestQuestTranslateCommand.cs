@@ -1,4 +1,5 @@
 ﻿using Baguettefy.Cache;
+using Baguettefy.Core.Interfaces;
 using Baguettefy.Data.Quests;
 using Discord;
 using Discord.Interactions;
@@ -22,7 +23,7 @@ namespace Baguettefy.Commands
         {
             await DeferAsync(true);
 
-            var db = _Services.GetRequiredService<OfflineCache>();
+            var db = _Services.GetRequiredService<IFirebaseDatabase>();
 
             try
             {
