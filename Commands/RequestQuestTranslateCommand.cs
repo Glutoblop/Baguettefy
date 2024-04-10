@@ -27,8 +27,8 @@ namespace Baguettefy.Commands
 
             try
             {
-                Quest? foundQuest = null;
-                await db.GetAllAsync<Quest>($"Quest", (path, item) =>
+                QuestData? foundQuest = null;
+                await db.GetAllAsync<QuestData>($"Quest", (path, item) =>
                 {
                     if (item.Name.En.ToLowerInvariant().Contains(name.ToLowerInvariant()))
                     {
@@ -95,11 +95,11 @@ namespace Baguettefy.Commands
 
         }
 
-        private Quest ContainsName(QuestsData quests, string name)
+        private QuestData ContainsName(AllQuestsData allQuests, string name)
         {
-            if (quests?.Quests == null) return null;
+            if (allQuests?.Quests == null) return null;
 
-            foreach (var quest in quests.Quests)
+            foreach (var quest in allQuests.Quests)
             {
                 if (!ContainsName(quest, name)) continue;
                 return quest;
@@ -108,14 +108,14 @@ namespace Baguettefy.Commands
             return null;
         }
 
-        private bool ContainsName(Quest quest, string name)
+        private bool ContainsName(QuestData questData, string name)
         {
-            if (quest == null) return false;
-            var questName = quest.Name.En.ToLowerInvariant();
+            if (questData == null) return false;
+            var questName = questData.Name.En.ToLowerInvariant();
             if (questName.Contains(name)) return false;
-            if (quest.Steps == null) return false;
+            if (questData.Steps == null) return false;
 
-            foreach (Step? questStep in quest.Steps)
+            foreach (Step? questStep in questData.Steps)
             {
                 var stepName = questStep.Name.En.ToLowerInvariant();
                 if (!stepName.Contains(name)) continue;

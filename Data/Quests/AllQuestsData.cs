@@ -4,19 +4,19 @@
 //
 //    using Baguettefy.Data.Quests;
 //
-//    var questsData = QuestsData.FromJson(jsonString);
+//    var questsData = AllQuestsData.FromJson(jsonString);
 
 namespace Baguettefy.Data.Quests
 {
     using Newtonsoft.Json;
 
-    public partial class QuestsData
+    public partial class AllQuestsData
     {
         [JsonProperty("data")]
-        public Quest[] Quests { get; set; }
+        public QuestData[] Quests { get; set; }
     }
 
-    public partial class Quest
+    public partial class QuestData
     {
         [JsonProperty("id")]
         public int Id { get; set; }

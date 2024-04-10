@@ -1,4 +1,7 @@
-﻿using Discord.Interactions;
+﻿using Baguettefy.Cache;
+using Baguettefy.Core.Interfaces;
+using Discord.Interactions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Baguettefy.Commands
 {
@@ -17,7 +20,15 @@ namespace Baguettefy.Commands
             runMode: RunMode.Async)]
         public async Task UpdateDatabase()
         {
+            await DeferAsync(true);
 
+            var db = _Services.GetRequiredService<IFirebaseDatabase>();
+            await new UpdateDatabase().Update(db, true);
+
+            await ModifyOriginalResponseAsync(properties =>
+            {
+                properties.Content = $"Completed";
+            });
         }
     }
 }

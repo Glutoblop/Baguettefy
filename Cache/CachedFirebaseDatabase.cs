@@ -145,7 +145,30 @@ namespace Baguettefy.Cache
                     {
                         continue;
                     }
-                    Dictionary<string, object>? dataDic = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+                    Dictionary<string, object>? dataDic;
+                    try
+                    {
+                        JArray obj = JArray.Parse(json);
+                        dataDic = new Dictionary<string, object>();
+                        foreach (var token in obj)
+                        {
+                            if(!token.HasValues) continue;
+
+                            var key = token.Path.TrimStart("[".ToCharArray()).TrimEnd("]".ToCharArray());
+                            var value = token.ToString();
+                            var data = JsonConvert.DeserializeObject(value);
+
+                            if(data == null) continue;
+                            dataDic.Add(key, data);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        dataDic = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                    }
+
+                    
                     if (dataDic == null) continue;
                     foreach (var dataPair in dataDic)
                     {
@@ -156,24 +179,21 @@ namespace Baguettefy.Cache
                         var dataJson = JsonConvert.SerializeObject(data);
 
                         JObject? jsonObj = JsonConvert.DeserializeObject<JObject>(dataJson);
-                        if (jsonObj != null)
+                        if (jsonObj == null) continue;
+
+                        FileInfo file = new FileInfo($"{_baseDirectory}/{path}.json");
+                        var filePath = file.FullName;
+                        var directoryName = Path.GetDirectoryName(filePath);
+                        Directory.CreateDirectory(directoryName);
+
+                        await File.WriteAllTextAsync(filePath, JsonConvert.SerializeObject(new OfflineObject
                         {
-                            FileInfo file = new FileInfo($"{_baseDirectory}/{path}.json");
-                            var filePath = file.FullName;
-                            var directoryName = Path.GetDirectoryName(filePath);
-                            Directory.CreateDirectory(directoryName);
+                            Json = dataJson,
+                            Key = path,
+                            LastAccessed = DateTime.Now
+                        }));
 
-                            await File.WriteAllTextAsync(filePath, JsonConvert.SerializeObject(new OfflineObject
-                            {
-                                Json = dataJson,
-                                Key = path,
-                                LastAccessed = DateTime.Now
-                            }));
-
-                            await PutOfflineAsync(path, jsonObj.Children().ToList());
-                        }
-
-                        await _Client.Child(path).PutAsync(dataJson);
+                        await PutOfflineAsync(path, jsonObj.Children().ToList());
                     }
                 }
             }
