@@ -52,7 +52,7 @@ namespace Baguettefy
                                 DefaultRunMode = Discord.Commands.RunMode.Async
                             }))
                             .AddSingleton<ILogger>(s => new ConsoleLogger(ConstantData.LogType))
-                            .AddSingleton<IFirebaseDatabase>(s => new CachedFirebaseDatabase(s))
+                            .AddSingleton<IFirebaseDatabase>(s => new CachedFirebaseDatabase())
                         ).Build();
 
                     await RunAsync(host);
@@ -87,7 +87,7 @@ namespace Baguettefy
             
             var databaseUrl = config["firebaseDatabaseUrl"];
             var serviceAccount = config["firebaseServiceAccount"];
-            await db.Init(databaseUrl, serviceAccount, TimeSpan.Zero, true);
+            await db.Init(databaseUrl, serviceAccount);
             
 #if DEBUG
             await new UpdateDatabase().Update(db);

@@ -3,7 +3,6 @@ using Firebase.Database;
 using Google.Apis.Auth.OAuth2;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Timer = System.Timers.Timer;
 
 namespace Baguettefy.Cache
 {
@@ -19,9 +18,7 @@ namespace Baguettefy.Cache
         public string BASE_URL = "";
         public string SERVICE_ACCOUNT_JSON = "";
 
-        private IServiceProvider _Services;
         private FirebaseClient _Client;
-        private Timer _TickTimer;
 
         private string _baseDirectory = "CachedDatabase/";
 
@@ -37,11 +34,6 @@ namespace Baguettefy.Cache
         }
 
         public event Action<KeyValuePair<string, object>> OnDataPut;
-
-        public CachedFirebaseDatabase(IServiceProvider services)
-        {
-            _Services = services;
-        }
 
         //https://github.com/step-up-labs/firebase-database-dotnet/issues/221
         //Auth setup using this suggestion.
@@ -67,9 +59,9 @@ namespace Baguettefy.Cache
                 });
         }
 
-        public async Task Init(string databaseUrl, string serviceAccount, TimeSpan syncDatabaseTickTime, bool cacheLocal = true, string localCacheName = "CachedDatabase/")
+        public async Task Init(string databaseUrl, string serviceAccount, bool cacheLocal = true, string localCacheName = "CachedDatabase/")
         {
-            if(!localCacheName.EndsWith("/")) localCacheName += "/";
+            if (!localCacheName.EndsWith("/")) localCacheName += "/";
             _baseDirectory = localCacheName;
             _localCache = cacheLocal;
 
@@ -78,63 +70,14 @@ namespace Baguettefy.Cache
 
             _Client = CreateClient();
 
-            _TickTimer = new Timer();
-
-            await PullEntireOnlineDatabase();
-
-            if (syncDatabaseTickTime.TotalMilliseconds > 0)
-            {
-                _TickTimer.Interval = syncDatabaseTickTime.TotalMilliseconds;
-                _TickTimer.Elapsed += async (_, _) =>
-                {
-                    //TODO - Figure out if this is a good idea. 
-                    await PullEntireOnlineDatabase();
-                };
-                _TickTimer.Start();
-            }
-        }
-
-        private async Task PutOfflineAsync(string path, IEnumerable<JToken> jsonObjs)
-        {
-            //Doesnt need lock because its always used by something from inside a lock
-
-            foreach (var child in jsonObjs)
-            {
-                if (child.Type == JTokenType.Property)
-                {
-                    await PutOfflineAsync($"{path}/{child.Path}", child.Children());
-                }
-                else if (child.Type == JTokenType.Object)
-                {
-                    FileInfo file = new FileInfo($"{_baseDirectory}/{path}.json");
-                    var filePath = file.FullName;
-                    var directoryName = Path.GetDirectoryName(filePath);
-                    Directory.CreateDirectory(directoryName);
-
-                    var json = child.ToString();
-
-                    await File.WriteAllTextAsync(filePath, JsonConvert.SerializeObject(new OfflineObject()
-                    {
-                        Json = json,
-                        Key = path,
-                        LastAccessed = DateTime.Now
-                    }));
-                }
-            }
-        }
-
-        private async Task PullEntireOnlineDatabase()
-        {
             if (!_localCache)
             {
                 return;
             }
 
-            _TickTimer.Stop();
             await _SemaphoreSlim.WaitAsync();
             try
             {
-                RecursiveDelete(new DirectoryInfo(_baseDirectory));
                 Directory.CreateDirectory(_baseDirectory);
 
                 //Cache all the known collections, this will clear the offline database if any existed.
@@ -153,13 +96,13 @@ namespace Baguettefy.Cache
                         dataDic = new Dictionary<string, object>();
                         foreach (var token in obj)
                         {
-                            if(!token.HasValues) continue;
+                            if (!token.HasValues) continue;
 
                             var key = token.Path.TrimStart("[".ToCharArray()).TrimEnd("]".ToCharArray());
                             var value = token.ToString();
                             var data = JsonConvert.DeserializeObject(value);
 
-                            if(data == null) continue;
+                            if (data == null) continue;
                             dataDic.Add(key, data);
                         }
                     }
@@ -168,7 +111,7 @@ namespace Baguettefy.Cache
                         dataDic = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
                     }
 
-                    
+
                     if (dataDic == null) continue;
                     foreach (var dataPair in dataDic)
                     {
@@ -177,9 +120,6 @@ namespace Baguettefy.Cache
 
                         CanProcessPath(path);
                         var dataJson = JsonConvert.SerializeObject(data);
-
-                        JObject? jsonObj = JsonConvert.DeserializeObject<JObject>(dataJson);
-                        if (jsonObj == null) continue;
 
                         FileInfo file = new FileInfo($"{_baseDirectory}/{path}.json");
                         var filePath = file.FullName;
@@ -192,15 +132,12 @@ namespace Baguettefy.Cache
                             Key = path,
                             LastAccessed = DateTime.Now
                         }));
-
-                        await PutOfflineAsync(path, jsonObj.Children().ToList());
                     }
                 }
             }
             finally
             {
                 _SemaphoreSlim.Release();
-                _TickTimer.Start();
             }
         }
 
@@ -323,8 +260,6 @@ namespace Baguettefy.Cache
                     Key = path,
                     LastAccessed = DateTime.Now
                 }));
-
-                await PutOfflineAsync(path, jsonObj.Children());
             }
 
             await _Client.Child(path).PutAsync(dataJson);

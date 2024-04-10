@@ -6,7 +6,7 @@
 
         public event Action<KeyValuePair<string, object>> OnDataPut;
 
-        Task Init(string databaseUrl, string serviceAccount, TimeSpan syncDatabaseTickTime, bool cacheLocal = true, string localCacheName = "CachedDatabase/");
+        Task Init(string databaseUrl, string serviceAccount, bool cacheLocal = true, string localCacheName = "CachedDatabase/");
 
         Task<T> GetAsync<T>(string path) where T : class;
 
