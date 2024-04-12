@@ -4,6 +4,7 @@ using Discord;
 using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Baguettefy.Commands
 {
@@ -146,6 +147,31 @@ namespace Baguettefy.Commands
             public List<String> ItemsRequired { get; set; } = new List<String>();
 
             public List<QuestRequirements> QuestsRequired { get; set; } = new List<QuestRequirements>();
+
+            public string ToMermaid()
+            {
+                string mermaid = "flowchart TD\r\n";
+                int step = 0;
+
+                UpdateMermaid(ref step, ref mermaid);
+
+                return mermaid;
+            }
+
+            private void UpdateMermaid(ref int step, ref string mermaid)
+            {
+                var startStep = step;
+                for (var index = 0; index < QuestsRequired.Count; index++)
+                {
+                    var quest = QuestsRequired[index];
+                    mermaid += $"\n    {startStep}({Quest.Name}) --> {++step}({quest.Quest.Name})";
+                }
+
+                foreach (QuestRequirements quest in QuestsRequired)
+                {
+                    quest.UpdateMermaid(ref step, ref mermaid);
+                }
+            }
         }
 
         [SlashCommand("quest_prerequisites", "Search an English quest name for its prerequisites.", runMode: RunMode.Async)]
@@ -187,6 +213,8 @@ namespace Baguettefy.Commands
                 Quest = new ShortQuestData(foundQuest)
             };
             await PopulateRequirements(db, requirements);
+
+            var mermaid = requirements.ToMermaid();
 
             Console.WriteLine($"{requirements}");
         }
