@@ -197,13 +197,27 @@ namespace Baguettefy.Cache
                 if (!Directory.Exists(path))
                 {
                     var json = await _Client.Child(path).OnceAsJsonAsync();
-                    Dictionary<string, object>? dataDic = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
-                    if (dataDic != null)
+
+                    Dictionary<string, object>? dataDic;
+                    try
                     {
-                        foreach (var data in dataDic)
+                        JArray obj = JArray.Parse(json);
+                        dataDic = new Dictionary<string, object>();
+                        foreach (var token in obj)
                         {
-                            await Internal_PutAsync($"{path}/{data.Key}", data.Value);
+                            if (!token.HasValues) continue;
+
+                            var key = token.Path.TrimStart("[".ToCharArray()).TrimEnd("]".ToCharArray());
+                            var value = token.ToString();
+                            var data = JsonConvert.DeserializeObject(value);
+
+                            if (data == null) continue;
+                            dataDic.Add(key, data);
                         }
+                    }
+                    catch (Exception e)
+                    {
+                        dataDic = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
                     }
                 }
 

@@ -33,7 +33,6 @@ namespace Baguettefy.Cache
                 //Loop through the pages in this category
                 for (int page = 0; page < 10; page++)
                 {
-
                     var url = $"https://api.dofusdb.fr/quests?$";
                     var skipStartIndex = page * 50;
                     var allQuestsUrl = $"{url}skip={skipStartIndex}&$populate=true&$limit=50&categoryId={category}&lang=en";

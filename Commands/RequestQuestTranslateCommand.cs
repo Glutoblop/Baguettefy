@@ -1,9 +1,9 @@
-﻿using Baguettefy.Cache;
-using Baguettefy.Core.Interfaces;
+﻿using Baguettefy.Core.Interfaces;
 using Baguettefy.Data.Quests;
 using Discord;
 using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 
 namespace Baguettefy.Commands
 {
@@ -125,5 +125,144 @@ namespace Baguettefy.Commands
             return false;
         }
 
+        public class ShortQuestData
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+
+            public ShortQuestData(QuestData questData)
+            {
+                Id = questData.Id;
+                Name = questData.Name.En;
+            }
+        }
+
+        public class QuestRequirements
+        {
+            public ShortQuestData Quest { get; set; }
+
+            public int LevelRequired { get; set; }
+
+            public List<String> ItemsRequired { get; set; } = new List<String>();
+
+            public List<QuestRequirements> QuestsRequired { get; set; } = new List<QuestRequirements>();
+        }
+
+        [SlashCommand("quest_prerequisites", "Search an English quest name for its prerequisites.", runMode: RunMode.Async)]
+        public async Task QuestPrerequisites(string name)
+        {
+            await DeferAsync(true);
+
+            var db = _Services.GetRequiredService<IFirebaseDatabase>();
+
+            QuestData? foundQuest = null;
+            await db.GetAllAsync<QuestData>($"Quest", (path, item) =>
+            {
+                if (item.Name.En.ToLowerInvariant().Contains(name.ToLowerInvariant()))
+                {
+                    foundQuest = item;
+                    return true;
+                }
+
+                if (item.Name.Fr.ToLowerInvariant().Contains(name.ToLowerInvariant()))
+                {
+                    foundQuest = item;
+                    return true;
+                }
+
+                return false;
+            });
+
+            if (foundQuest == null)
+            {
+                await ModifyOriginalResponseAsync(properties =>
+                {
+                    properties.Content = $"Could not find any quest containing the phrase: {name}";
+                });
+                return;
+            }
+
+            QuestRequirements requirements = new QuestRequirements()
+            {
+                Quest = new ShortQuestData(foundQuest)
+            };
+            await PopulateRequirements(db, requirements);
+
+            Console.WriteLine($"{requirements}");
+        }
+
+        private async Task PopulateRequirements(IFirebaseDatabase db, QuestRequirements requirements)
+        {
+            //Qf=1942&Qf=1945&Qf=1946
+            //PL>179&PO=19414
+
+            //Qf = Quest Finished
+            //PL = Level Required
+            //PO = Possess ItemData
+
+            var quest = await db.GetAsync<QuestData>($"Quest/{requirements.Quest.Id}");
+
+            var split = quest.StartCriterion.Split("&".ToCharArray());
+            foreach (var item in split)
+            {
+                if (item.StartsWith("PL"))
+                {
+                    var pl = "PL>";
+                    var levelReq = item.Remove(0, pl.Length);
+                    if (int.TryParse(levelReq, out int level))
+                    {
+                        requirements.LevelRequired = level;
+                    }
+                }
+
+                if (item.StartsWith("PO"))
+                {
+                    var pl = "PO=";
+                    var itemIdReq = item.Remove(0, pl.Length);
+
+                    try
+                    {
+                        HttpResponseMessage response = await client.GetAsync($"https://api.dofusdb.fr/items/{itemIdReq}?lang=en");
+                        if (response.IsSuccessStatusCode)
+                        {
+                            string json = await response.Content.ReadAsStringAsync();
+                            QuestItemData? itemData = JsonConvert.DeserializeObject<QuestItemData>(json);
+                            if (itemData != null)
+                            {
+                                requirements.ItemsRequired.Add(itemData.Name.En);
+                            }
+                            else
+                            {
+                                requirements.ItemsRequired.Add(itemIdReq);
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        requirements.ItemsRequired.Add(itemIdReq);
+                    }
+                }
+
+                if (item.StartsWith("Qf"))
+                {
+                    var qf = "Qf=";
+                    var questFinished = item.Remove(0, qf.Length);
+                    var reqQuest = await db.GetAsync<QuestData>($"Quest/{questFinished}");
+                    if (reqQuest != null)
+                    {
+                        requirements.QuestsRequired.Add(new QuestRequirements()
+                        {
+                            Quest = new ShortQuestData(reqQuest)
+                        });
+                    }
+                }
+            }
+
+            foreach (var questRequired in requirements.QuestsRequired)
+            {
+                await PopulateRequirements(db, questRequired);
+            }
+
+        }
     }
 }
