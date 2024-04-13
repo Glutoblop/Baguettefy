@@ -33,12 +33,12 @@ namespace Baguettefy.Commands
             {
                 var initial_search_url = $"https://api.dofusdu.de/dofus2/{incomingLang}/items/search?query={name}&limit=1";
 
-                Item? search_item = null;
+                ItemData? search_item = null;
                 HttpResponseMessage response = await client.GetAsync(initial_search_url);
                 if (response.IsSuccessStatusCode)
                 {
                     string data = await response.Content.ReadAsStringAsync();
-                    search_item = JsonConvert.DeserializeObject<Item[]>(data)?.FirstOrDefault();
+                    search_item = JsonConvert.DeserializeObject<ItemData[]>(data)?.FirstOrDefault();
                 }
 
                 if (search_item == null)
@@ -64,12 +64,12 @@ namespace Baguettefy.Commands
 
                 var detail_url = $"https://api.dofusdu.de/dofus2/{otherLang}/{itemType}/{search_item.AnkamaId}";
 
-                Item? detail_item = null;
+                ItemData? detail_item = null;
                 HttpResponseMessage detail_response = await client.GetAsync(detail_url);
                 if (response.IsSuccessStatusCode)
                 {
                     string data = await detail_response.Content.ReadAsStringAsync();
-                    detail_item = JsonConvert.DeserializeObject<Item>(data);
+                    detail_item = JsonConvert.DeserializeObject<ItemData>(data);
                 }
 
                 if (detail_item == null)
@@ -84,12 +84,12 @@ namespace Baguettefy.Commands
 
                 var alt_url = $"https://api.dofusdu.de/dofus2/{incomingLang}/{itemType}/{search_item.AnkamaId}";
 
-                Item? alt_item = null;
+                ItemData? alt_item = null;
                 HttpResponseMessage alt_response = await client.GetAsync(alt_url);
                 if (response.IsSuccessStatusCode)
                 {
                     string data = await alt_response.Content.ReadAsStringAsync();
-                    alt_item = JsonConvert.DeserializeObject<Item>(data);
+                    alt_item = JsonConvert.DeserializeObject<ItemData>(data);
                 }
 
                 if (alt_item == null)

@@ -2,6 +2,8 @@
 using Baguettefy.Core;
 using Baguettefy.Core.Interfaces;
 using Baguettefy.Core.Logging;
+using Baguettefy.Data;
+using Baguettefy.Data.Quests;
 using Discord;
 using Discord.Commands;
 using Discord.Interactions;
@@ -50,7 +52,7 @@ namespace Baguettefy
                                 DefaultRunMode = Discord.Commands.RunMode.Async
                             }))
                             .AddSingleton<ILogger>(s => new ConsoleLogger(ConstantData.LogType))
-                            .AddSingleton<OfflineCache>(s => new OfflineCache())
+                            .AddSingleton<IFirebaseDatabase>(s => new CachedFirebaseDatabase())
                         ).Build();
 
                     await RunAsync(host);
@@ -76,8 +78,20 @@ namespace Baguettefy
             var pCommands = services.GetRequiredService<PrefixHandler>();
             await pCommands.InitialiseAsync();
 
-            var cache = services.GetRequiredService<OfflineCache>();
-            await cache.Init();
+            var db = services.GetRequiredService<IFirebaseDatabase>();
+            db.CachedCollections = new Dictionary<string, Type>()
+            {
+                {"Completed", typeof(CacheComplete)},
+                {"Quest", typeof(QuestData)}
+            };
+            
+            var databaseUrl = config["firebaseDatabaseUrl"];
+            var serviceAccount = config["firebaseServiceAccount"];
+            await db.Init(databaseUrl, serviceAccount);
+            
+#if DEBUG
+            await new UpdateDatabase().Update(db);
+#endif
 
             client.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Log: {msg}"); };
             sCommands.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Interaction: {msg}"); };

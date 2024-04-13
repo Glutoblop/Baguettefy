@@ -2,7 +2,7 @@
 
 namespace Baguettefy.Data.Items
 {
-    public class Item
+    public class ItemData
     {
         [JsonProperty("ankama_id")]
         public long AnkamaId { get; set; }
