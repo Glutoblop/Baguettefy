@@ -291,17 +291,24 @@ wbsDiagram {
 
                 var bytes = await renderer.RenderAsync(plant, OutputFormat.Png);
 
-                using (var imgStream = new System.IO.MemoryStream(bytes))
+                using var imgStream = new System.IO.MemoryStream(bytes);
+                var channel = await Context.Guild.GetChannelAsync(Context.Interaction.ChannelId.Value);
+                if (channel is ITextChannel c)
                 {
-                    var channel = await Context.Guild.GetChannelAsync(Context.Interaction.ChannelId.Value);
-                    if (channel is ITextChannel c)
+                    var msg = await c.SendMessageAsync($"# Quest chain found for: {foundQuest.Name.En}");
+                    await msg.ModifyAsync(properties =>
                     {
-                        await c.SendFileAsync(imgStream, "graph.png");
-                    }
+                        properties.Attachments =
+                            new[]
+                            {
+                                new FileAttachment(imgStream, $"{foundQuest.Name}.png")
+                            };
+                    });
                 }
+
                 await ModifyOriginalResponseAsync(properties =>
                 {
-                    properties.Content = properties.Content = $"\ud83e\udd56 Oui Oui Baguette \ud83e\udd56";
+                    properties.Content = $"\ud83e\udd56 Oui Oui Baguette \ud83e\udd56\n";
                 });
             }
             catch (Exception e)
