@@ -239,7 +239,7 @@ wbsDiagram {
 
         }
 
-        [SlashCommand("quest_prerequisites", "Search an English quest name for its prerequisites.", runMode: RunMode.Async)]
+        [SlashCommand("quest_prerequisites", "Search an English/French quest name for its prerequisites.", runMode: RunMode.Async)]
         public async Task QuestPrerequisites(string name)
         {
             await DeferAsync(true);
