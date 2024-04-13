@@ -26,43 +26,32 @@ namespace Baguettefy
         {
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Utc };
 
-            while (true)
-            {
-                try
-                {
-                    var config = new ConfigurationBuilder()
-                        .SetBasePath(AppContext.BaseDirectory)
-                        .AddJsonFile("config.json")
-                        .Build();
+            var config = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("config.json")
+                .Build();
 
-                    using IHost host = Host.CreateDefaultBuilder()
-                        .ConfigureServices((_, services) => services
-                            .AddSingleton(config)
-                            .AddSingleton(x => new DiscordSocketClient(new DiscordSocketConfig
-                            {
-                                GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent,
-                                AlwaysDownloadUsers = true
-                            }))
-                            .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(),
-                                new InteractionServiceConfig() { DefaultRunMode = RunMode.Async }))
-                            .AddSingleton<InteractionHandler>()
-                            .AddSingleton<PrefixHandler>()
-                            .AddSingleton(x => new CommandService(new CommandServiceConfig()
-                            {
-                                DefaultRunMode = Discord.Commands.RunMode.Async
-                            }))
-                            .AddSingleton<ILogger>(s => new ConsoleLogger(ConstantData.LogType))
-                            .AddSingleton<IFirebaseDatabase>(s => new CachedFirebaseDatabase())
-                        ).Build();
+            using IHost host = Host.CreateDefaultBuilder()
+                .ConfigureServices((_, services) => services
+                    .AddSingleton(config)
+                    .AddSingleton(x => new DiscordSocketClient(new DiscordSocketConfig
+                    {
+                        GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent,
+                        AlwaysDownloadUsers = true
+                    }))
+                    .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(),
+                        new InteractionServiceConfig() { DefaultRunMode = RunMode.Async }))
+                    .AddSingleton<InteractionHandler>()
+                    .AddSingleton<PrefixHandler>()
+                    .AddSingleton(x => new CommandService(new CommandServiceConfig()
+                    {
+                        DefaultRunMode = Discord.Commands.RunMode.Async
+                    }))
+                    .AddSingleton<ILogger>(s => new ConsoleLogger(ConstantData.LogType))
+                    .AddSingleton<IFirebaseDatabase>(s => new CachedFirebaseDatabase())
+                ).Build();
 
-                    await RunAsync(host);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"Big crash: {e}");
-                    Console.WriteLine($"Attempting restart..");
-                }
-            }
+            await RunAsync(host);
         }
 
         public async Task RunAsync(IHost host)
@@ -84,11 +73,11 @@ namespace Baguettefy
                 {"Completed", typeof(CacheComplete)},
                 {"Quest", typeof(QuestData)}
             };
-            
+
             var databaseUrl = config["firebaseDatabaseUrl"];
             var serviceAccount = config["firebaseServiceAccount"];
             await db.Init(databaseUrl, serviceAccount);
-            
+
 #if DEBUG
             await new UpdateDatabase().Update(db);
 #endif
