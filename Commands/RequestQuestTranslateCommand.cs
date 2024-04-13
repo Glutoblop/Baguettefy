@@ -4,7 +4,7 @@ using Discord;
 using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using PlantUml.Net;
 
 namespace Baguettefy.Commands
 {
@@ -172,6 +172,71 @@ namespace Baguettefy.Commands
                     quest.UpdateMermaid(ref step, ref mermaid);
                 }
             }
+
+            public string ToPlantUml()
+            {
+                var plant = @"
+@startwbs
+<style>
+' this time, scoping to wbsDiagram
+wbsDiagram {
+
+  ' Here we introduce a global style, i.e. not targeted to any element
+  ' thus all lines (meaning connector and borders,
+  ' there are no other lines in WBS) are black by default
+  Linecolor black
+
+  ' But we can also target a diagram specific element, like arrow
+   arrow {
+    ' note that Connectors are actually ""Arrows""; this may change in the future
+    ' so this means all Connectors and Arrows are now going to be green
+    LineColor green
+  }
+
+}
+</style>
+
+";
+                int step = 0;
+                plant += $"* {Quest.Name}\n";
+                step++;
+                UpdatePlant(ref step, ref plant);
+
+                plant += "\n@endwbs";
+
+
+                return plant;
+            }
+
+            private static void PutAsteriks(ref string value, int count)
+            {
+                for (int i = 0; i <= count; i++)
+                {
+                    value += "*";
+                }
+            }
+
+
+            private void UpdatePlant(ref int step, ref string plant)
+            {
+                for (var index = 0; index < QuestsRequired.Count; index++)
+                {
+                    var quest = QuestsRequired[index];
+                    PutAsteriks(ref plant, step);
+                    plant += $" {quest.Quest.Name}\n";
+                }
+
+                if (QuestsRequired.Count > 0)
+                {
+                    step++;
+                }
+
+                foreach (QuestRequirements quest in QuestsRequired)
+                {
+                    quest.UpdatePlant(ref step, ref plant);
+                }
+            }
+
         }
 
         [SlashCommand("quest_prerequisites", "Search an English quest name for its prerequisites.", runMode: RunMode.Async)]
@@ -203,20 +268,50 @@ namespace Baguettefy.Commands
             {
                 await ModifyOriginalResponseAsync(properties =>
                 {
-                    properties.Content = $"Could not find any quest containing the phrase: {name}";
+                    properties.Content = $"\ud83e\udd56 Non non Baguette \ud83e\udd56\n" +
+                                         $"Could not find any quest containing the phrase: {name}";
                 });
                 return;
             }
 
-            QuestRequirements requirements = new QuestRequirements()
+            try
             {
-                Quest = new ShortQuestData(foundQuest)
-            };
-            await PopulateRequirements(db, requirements);
+                QuestRequirements requirements = new QuestRequirements()
+                {
+                    Quest = new ShortQuestData(foundQuest)
+                };
+                await PopulateRequirements(db, requirements);
 
-            var mermaid = requirements.ToMermaid();
+                //var mermaid = requirements.ToMermaid();
+                var plant = requirements.ToPlantUml();
 
-            Console.WriteLine($"{requirements}");
+                var factory = new RendererFactory();
+
+                var renderer = factory.CreateRenderer(new PlantUmlSettings());
+
+                var bytes = await renderer.RenderAsync(plant, OutputFormat.Png);
+
+                using (var imgStream = new System.IO.MemoryStream(bytes))
+                {
+                    var channel = await Context.Guild.GetChannelAsync(Context.Interaction.ChannelId.Value);
+                    if (channel is ITextChannel c)
+                    {
+                        await c.SendFileAsync(imgStream, "graph.png");
+                    }
+                }
+                await ModifyOriginalResponseAsync(properties =>
+                {
+                    properties.Content = properties.Content = $"\ud83e\udd56 Oui Oui Baguette \ud83e\udd56";
+                });
+            }
+            catch (Exception e)
+            {
+                await ModifyOriginalResponseAsync(properties =>
+                {
+                    properties.Content = $"\ud83e\udd56 Non non Baguette \ud83e\udd56\n" +
+                                         $"Something went wrong :(";
+                });
+            }
         }
 
         private async Task PopulateRequirements(IFirebaseDatabase db, QuestRequirements requirements)
