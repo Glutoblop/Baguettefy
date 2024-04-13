@@ -7,7 +7,7 @@ dotnet publish --force /property:Configuration=Release
 docker stop baguette-container
 docker rm baguette-container
 
-docker build --tag baguette-image .\
+docker build --no-cache --tag baguette-image .\
 
 docker run -d --restart=always --name baguette-container baguette-image
 
