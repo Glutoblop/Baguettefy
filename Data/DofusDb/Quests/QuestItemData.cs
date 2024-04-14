@@ -37,10 +37,8 @@
         public bool IsLegendary { get; set; }
         public long QuestItemDataId { get; set; }
         public long NameId { get; set; }
-        public Description Name { get; set; }
+        public Name Name { get; set; }
         public long TypeId { get; set; }
-        public long DescriptionId { get; set; }
-        public Description Description { get; set; }
         public long IconId { get; set; }
         public long Level { get; set; }
         public long RealWeight { get; set; }
@@ -56,7 +54,7 @@
         public object ChangeVersion { get; set; }
         public object TooltipExpirationDate { get; set; }
         public object[] Effects { get; set; }
-        public Description Slug { get; set; }
+        public Name Slug { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
         public long V { get; set; }
@@ -65,17 +63,6 @@
         public object ItemSet { get; set; }
         public object Appearance { get; set; }
         public TypeClass Type { get; set; }
-    }
-
-    public partial class Description
-    {
-        public string De { get; set; }
-        public string En { get; set; }
-        public string Es { get; set; }
-        public string Fr { get; set; }
-        public string It { get; set; }
-        public string Pt { get; set; }
-        public long? Id { get; set; }
     }
 
     public partial class Imgset
@@ -94,7 +81,7 @@
         public string Id { get; set; }
         public long TypeId { get; set; }
         public long NameId { get; set; }
-        public Description Name { get; set; }
+        public Name Name { get; set; }
         public long SuperTypeId { get; set; }
         public long CategoryId { get; set; }
         public bool IsInEncyclopedia { get; set; }
@@ -115,7 +102,7 @@
         public string Id { get; set; }
         public object[] Positions { get; set; }
         public long SuperTypeId { get; set; }
-        public Description Name { get; set; }
+        public Name Name { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
         public long V { get; set; }
