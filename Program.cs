@@ -3,6 +3,7 @@ using Baguettefy.Core;
 using Baguettefy.Core.Interfaces;
 using Baguettefy.Core.Logging;
 using Baguettefy.Data;
+using Baguettefy.Data.DofusDb.Quests;
 using Baguettefy.Data.Quests;
 using Discord;
 using Discord.Commands;
@@ -71,6 +72,7 @@ namespace Baguettefy
             db.CachedCollections = new Dictionary<string, Type>()
             {
                 {"Completed", typeof(CacheComplete)},
+                {"QuestCategories", typeof(AllQuestCategories)},
                 {"Quest", typeof(QuestData)}
             };
 
@@ -79,7 +81,7 @@ namespace Baguettefy
             await db.Init(databaseUrl, serviceAccount);
 
 #if DEBUG
-            await new UpdateDatabase().Update(db);
+            await new UpdateDatabase().Update(db,true);
 #endif
 
             client.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Log: {msg}"); };

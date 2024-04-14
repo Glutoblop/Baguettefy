@@ -1,4 +1,4 @@
-﻿namespace Baguettefy.Data.Quests
+﻿namespace Baguettefy.Data.DofusDb.Quests
 {
 
     public partial class QuestItemData

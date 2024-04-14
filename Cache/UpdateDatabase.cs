@@ -1,7 +1,10 @@
 ﻿using Baguettefy.Core.Interfaces;
 using Baguettefy.Data;
+using Baguettefy.Data.DofusDb.Quests;
 using Baguettefy.Data.Quests;
+using Google.Api.Gax;
 using Newtonsoft.Json;
+using System;
 
 namespace Baguettefy.Cache
 {
@@ -22,58 +25,22 @@ namespace Baguettefy.Cache
                     if (duration < TimeSpan.FromDays(30)) return;
                 }
             }
+            
+            await FetchQuestCategoriesData(db);
 
-            //Categories contain types of quests, loop through these
-            for (int category = 2; category < 100; category++)
+            var questCategories = await db.GetAsync<AllQuestCategories>($"QuestCategories");
+
+            foreach (var questCategory in questCategories.Data)
             {
-                var pageMissingCount = 0;
-                Console.WriteLine($"#### Search Category {category}...");
-                await Task.Delay(100);
-
-                //Loop through the pages in this category
-                for (int page = 0; page < 10; page++)
+                var pageCount = Math.Ceiling(questCategory.QuestIds.Length / 50.0f);
+                for (var pageIndex = 0; pageIndex < pageCount; pageIndex++)
                 {
+                    var pageSize = 50;
+                    var startIndex = pageIndex * pageSize;
                     var url = $"https://api.dofusdb.fr/quests?$";
-                    var skipStartIndex = page * 50;
-                    var allQuestsUrl = $"{url}skip={skipStartIndex}&$populate=true&$limit=50&categoryId={category}&lang=en";
-                    //allQuestsUrl = $"https://api.dofusdb.fr/quests?$skip=0&$populate=true&$limit=1&categoryId=4&lang=en";
+                    var allQuestsUrl = $"{url}skip={startIndex}&$populate=true&$limit={pageSize}&categoryId={questCategory.Id}&lang=en";
 
-                    HttpResponseMessage response = await client.GetAsync(allQuestsUrl);
-                    if (response.IsSuccessStatusCode)
-                    {
-                        string json = await response.Content.ReadAsStringAsync();
-                        AllQuestsData? allQuests = JsonConvert.DeserializeObject<AllQuestsData>(json);
-
-                        if (allQuests?.Quests?.Length > 0)
-                        {
-                            pageMissingCount = 0;
-
-                            foreach (var quest in allQuests?.Quests)
-                            {
-                                var data = await db.GetAsync<QuestData>($"Quest/{quest.Id}");
-                                if (data == null)
-                                {
-                                    await db.PutAsync($"Quest/{quest.Id}", quest);
-
-                                    Console.WriteLine($"{quest.Name.En} added to cached [{quest.Id}]");
-                                }
-                                else
-                                {
-                                    Console.WriteLine($"{quest.Name.En} already cached [{quest.Id}]");
-                                }
-                            }
-                        }
-                        else
-                        {
-                            Console.WriteLine($"No data found for category:{category} page:{page}");
-                            pageMissingCount++;
-                            if (pageMissingCount > 2)
-                            {
-                                Console.WriteLine($"Assuming end of Category, skipping to next.");
-                                break;
-                            }
-                        }
-                    }
+                    await FetchQuestData(db, allQuestsUrl);
 
                     await Task.Delay(350);
                 }
@@ -87,6 +54,68 @@ namespace Baguettefy.Cache
                 TimeStamp = DateTime.UtcNow
             });
 
+        }
+
+        private async Task FetchQuestCategoriesData(IFirebaseDatabase db)
+        {
+            AllQuestCategories allQuestCategories = null;
+
+            for (int i = 0; i < 5; i++)
+            {
+                var pageSize = 50;
+                var startIndex = i * pageSize;
+                var url = $"https://api.dofusdb.fr/quest-categories?$";
+                var questCategoriesUrl = $"{url}skip={startIndex}&$limit={pageSize}&$sort=order&lang=en";
+
+                HttpResponseMessage response = await client.GetAsync(questCategoriesUrl);
+                if (!response.IsSuccessStatusCode) continue;
+
+                string json = await response.Content.ReadAsStringAsync();
+                AllQuestCategories? allCategories = JsonConvert.DeserializeObject<AllQuestCategories>(json);
+
+                if (allCategories?.Data?.Count <= 0) continue;
+                if (allQuestCategories == null) allQuestCategories = allCategories;
+                else
+                {
+                    if(allQuestCategories.Data == null) allQuestCategories = new AllQuestCategories();
+                    allCategories.Data.AddRange(allCategories.Data);
+                }
+            }
+
+            await db.PutAsync($"QuestCategories", allQuestCategories);
+        }
+
+        private async Task<bool> FetchQuestData(IFirebaseDatabase db, string allQuestsUrl)
+        {
+            HttpResponseMessage response = await client.GetAsync(allQuestsUrl);
+            if (!response.IsSuccessStatusCode) return false;
+
+            string json = await response.Content.ReadAsStringAsync();
+            AllQuestsData? allQuests = JsonConvert.DeserializeObject<AllQuestsData>(json);
+
+            if (allQuests?.Quests?.Length > 0)
+            {
+                foreach (var quest in allQuests?.Quests)
+                {
+                    var data = await db.GetAsync<QuestData>($"Quest/{quest.Id}");
+                    if (data == null)
+                    {
+                        await db.PutAsync($"Quest/{quest.Id}", quest);
+
+                        Console.WriteLine($"{quest.Name.En} added to cached [{quest.Id}]");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"{quest.Name.En} already cached [{quest.Id}]");
+                    }
+                }
+            }
+            else
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Baguettefy.Core.Interfaces;
+using Baguettefy.Data.DofusDb.Quests;
 using Baguettefy.Data.Quests;
 using Discord;
 using Discord.Interactions;
