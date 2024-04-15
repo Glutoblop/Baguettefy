@@ -137,7 +137,8 @@ namespace Baguettefy.Commands
 
         public class Requirements
         {
-            public ShortData Data { get; set; }
+            public ShortData QuestData { get; set; }
+            public ShortData AchievementData { get; set; }
 
             public List<Requirements> Required { get; set; } = new List<Requirements>();
 
@@ -157,7 +158,7 @@ namespace Baguettefy.Commands
                 for (var index = 0; index < Required.Count; index++)
                 {
                     var quest = Required[index];
-                    mermaid += $"\n    {startStep}({Data.Name}) --> {++step}({quest.Data.Name})";
+                    //mermaid += $"\n    {startStep}({Data.Name}) --> {++step}({quest.Data.Name})";
                 }
 
                 foreach (Requirements quest in Required)
@@ -210,12 +211,12 @@ wbsDiagram {
             private void UpdatePlant(int step, ref string plant)
             {
                 PutAsteriks(ref plant, step);
-                plant += $" {Data.Name}\n";
+                plant += $" {(QuestData == null ? $"{AchievementData.Name}" : $"{QuestData.Name}")}\n";
 
                 foreach (var req in Required)
                 {
                     PutAsteriks(ref plant, step+1);
-                    plant += $" {req.Data.Name}\n";
+                    plant += $" {(req.QuestData == null ? $"{req.AchievementData.Name}" : $"{req.QuestData.Name}")}\n";
 
                     foreach (Requirements childReq in req.Required)
                     {
@@ -284,7 +285,7 @@ wbsDiagram {
                 Requirements requirements = new Requirements();
                 if (foundQuest != null)
                 {
-                    requirements.Data = new ShortData()
+                    requirements.QuestData = new ShortData()
                     {
                         Id = foundQuest.Id,
                         Name = foundQuest.Name.En
@@ -293,7 +294,7 @@ wbsDiagram {
                 }
                 else
                 {
-                    requirements.Data = new ShortData()
+                    requirements.AchievementData = new ShortData()
                     {
                         Id = foundAchievement.Id,
                         Name = foundAchievement.Name.En
@@ -361,7 +362,7 @@ wbsDiagram {
             //PL = Level Required
             //PO = Possess ItemData
 
-            var quest = await db.GetAsync<QuestData>($"Quest/{requirements.Data.Id}");
+            var quest = await db.GetAsync<QuestData>($"Quest/{requirements.QuestData.Id}");
 
             var split = quest.StartCriterion.Split("&".ToCharArray());
             foreach (var item in split)
@@ -373,7 +374,7 @@ wbsDiagram {
                 if (reqQuest == null) continue;
                 requirements.Required.Add(new Requirements()
                 {
-                    Data = new ShortData() { Id = reqQuest.Id, Name = reqQuest.Name.En }
+                    QuestData = new ShortData() { Id = reqQuest.Id, Name = reqQuest.Name.En }
                 });
             }
 
@@ -386,7 +387,7 @@ wbsDiagram {
 
         private async Task PopuplateAchievemnetRequiremenets(IFirebaseDatabase db, Requirements requirements)
         {
-            var achievement = await db.GetAsync<AchievementData>($"Achievement/{requirements.Data.Id}");
+            var achievement = await db.GetAsync<AchievementData>($"Achievement/{requirements.AchievementData.Id}");
 
             foreach (var achObj in achievement?.Objectives ?? new List<AchievementObjective>())
             {
@@ -402,7 +403,7 @@ wbsDiagram {
                     if (reqAch == null) continue;
                     var achRequirements = new Requirements()
                     {
-                        Data = new ShortData() { Id = long.Parse(achId), Name = reqAch.Name.En }
+                        AchievementData = new ShortData() { Id = long.Parse(achId), Name = reqAch.Name.En }
                     };
                     await PopuplateAchievemnetRequiremenets(db, achRequirements);
                     requirements.Required.Add(achRequirements);
