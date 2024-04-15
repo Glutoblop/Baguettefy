@@ -65,7 +65,7 @@ namespace Baguettefy.Data.DofusDb.Achievements
         public Uri Img { get; set; }
 
         [JsonProperty("objectives")]
-        public List<object> Objectives { get; set; }
+        public List<AchievementObjective> Objectives { get; set; }
 
         [JsonProperty("category")]
         public Category Category { get; set; }

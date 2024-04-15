@@ -80,13 +80,12 @@ namespace Baguettefy
                 {"AchievementCategories", typeof(AllAchievementCategories)},
                 {"Achievement", typeof(AchievementData)}
             };
-
             var databaseUrl = config["firebaseDatabaseUrl"];
             var serviceAccount = config["firebaseServiceAccount"];
             await db.Init(databaseUrl, serviceAccount);
 
 #if DEBUG
-            await new UpdateDatabase().Update(db, true);
+            await new UpdateDatabase().Update(db);
 #endif
 
             client.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Log: {msg}"); };
