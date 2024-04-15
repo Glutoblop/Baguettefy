@@ -267,6 +267,8 @@ scale 1920 width
 
             try
             {
+                Dictionary<long, string> cachedIds = new();
+
                 Requirements requirements = new Requirements();
                 if (foundQuest != null)
                 {
@@ -275,7 +277,8 @@ scale 1920 width
                         Id = foundQuest.Id,
                         Name = foundQuest.Name.En
                     };
-                    await PopulateQuestRequirements(db, requirements);
+                    cachedIds.Add(foundQuest.Id, foundQuest.Name.En);
+                    await PopulateQuestRequirements(db, requirements, cachedIds);
                 }
                 else
                 {
@@ -284,7 +287,8 @@ scale 1920 width
                         Id = foundAchievement.Id,
                         Name = foundAchievement.Name.En
                     };
-                    await PopuplateAchievemnetRequiremenets(db, requirements);
+                    cachedIds.Add(foundAchievement.Id, foundAchievement.Name.En);
+                    await PopuplateAchievemnetRequiremenets(db, requirements, cachedIds);
                 }
 
                 //var mermaid = requirements.ToMermaid();
@@ -338,7 +342,7 @@ scale 1920 width
             }
         }
 
-        private async Task PopulateQuestRequirements(IFirebaseDatabase db, Requirements requirements)
+        private async Task PopulateQuestRequirements(IFirebaseDatabase db, Requirements requirements, Dictionary<long,string> cachedIds)
         {
             //Qf=1942&Qf=1945&Qf=1946
             //PL>179&PO=19414
@@ -357,23 +361,26 @@ scale 1920 width
                 var questFinished = item.Remove(0, qf.Length);
                 var reqQuest = await db.GetAsync<QuestData>($"Quest/{questFinished}");
                 if (reqQuest == null) continue;
-                requirements.Required.Add(new Requirements()
+                var questRequirements = new Requirements()
                 {
                     QuestData = new ShortData() { Id = reqQuest.Id, Name = reqQuest.Name.En }
-                });
+                };
+                if (cachedIds.ContainsKey(questRequirements.QuestData.Id)) continue;
+                cachedIds.Add(questRequirements.QuestData.Id, questRequirements.QuestData.Name);
+                requirements.Required.Add(questRequirements);
             }
 
             foreach (var questRequired in requirements.Required)
             {
-                await PopulateQuestRequirements(db, questRequired);
+                await PopulateQuestRequirements(db, questRequired, cachedIds);
             }
 
         }
 
-        private async Task PopuplateAchievemnetRequiremenets(IFirebaseDatabase db, Requirements requirements)
+        private async Task PopuplateAchievemnetRequiremenets(IFirebaseDatabase db, Requirements requirements, Dictionary<long,string> cachedIds)
         {
             var achievement = await db.GetAsync<AchievementData>($"Achievement/{requirements.AchievementData.Id}");
-
+            
             foreach (var achObj in achievement?.Objectives ?? new List<AchievementObjective>())
             {
                 var criterion = achObj.Criterion.Replace("(", "").Replace(")", "");
@@ -390,11 +397,13 @@ scale 1920 width
                         {
                             AchievementData = new ShortData() { Id = long.Parse(achId), Name = reqAch.Name.En }
                         };
-                        await PopuplateAchievemnetRequiremenets(db, achRequirements);
+
+                        if (cachedIds.ContainsKey(achRequirements.AchievementData.Id)) continue;
+                        cachedIds.Add(achRequirements.AchievementData.Id, achRequirements.AchievementData.Name);
+                        await PopuplateAchievemnetRequiremenets(db, achRequirements, cachedIds);
                         requirements.Required.Add(achRequirements);
                     }
-
-                    if (item.StartsWith("Qf"))
+                    else if (item.StartsWith("Qf"))
                     {
                         var qf = "Qf=";
                         var questFinished = item.Remove(0, qf.Length);
@@ -404,7 +413,9 @@ scale 1920 width
                         {
                             QuestData = new ShortData() { Id = reqQuest.Id, Name = reqQuest.Name.En }
                         };
-                        await PopulateQuestRequirements(db, questRequirements);
+                        if(cachedIds.ContainsKey(questRequirements.QuestData.Id)) continue;
+                        cachedIds.Add(questRequirements.QuestData.Id, questRequirements.QuestData.Name);
+                        await PopulateQuestRequirements(db, questRequirements, cachedIds);
                         requirements.Required.Add(questRequirements);
                     }
                 }
