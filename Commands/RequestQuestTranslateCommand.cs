@@ -195,16 +195,17 @@ scale 1920 width
             private void UpdatePlant(int step, ref string plant)
             {
                 PutAsteriks(ref plant, step);
-                plant += $" {(QuestData == null ? $"{AchievementData.Name}" : $"{QuestData.Name}")}\n";
+                plant += $" {(QuestData == null ? $"<:1f451:> {AchievementData.Name}" : $"<:1f4d6:> {QuestData.Name}")}\n";
 
                 foreach (var req in Required)
                 {
-                    PutAsteriks(ref plant, step+1);
-                    plant += $" {(req.QuestData == null ? $"{req.AchievementData.Name}" : $"{req.QuestData.Name}")}\n";
+                    PutAsteriks(ref plant, step + 1);
+                    plant +=
+                        $" {(req.QuestData == null ? $"<:1f451:> {req.AchievementData.Name}" : $"<:1f4d6:> {req.QuestData.Name}")}\n";
 
                     foreach (Requirements childReq in req.Required)
                     {
-                        childReq.UpdatePlant(step+2, ref plant);
+                        childReq.UpdatePlant(step + 2, ref plant);
                     }
                 }
             }
@@ -379,18 +380,33 @@ scale 1920 width
                 var split = criterion.Split("&".ToCharArray());
                 foreach (var item in split)
                 {
-                    if (!item.StartsWith("OA")) continue;
-
-                    var qf = "OA=";
-                    var achId = item.Remove(0, qf.Length);
-                    var reqAch = await db.GetAsync<AchievementData>($"Achievement/{achId}");
-                    if (reqAch == null) continue;
-                    var achRequirements = new Requirements()
+                    if (item.StartsWith("OA"))
                     {
-                        AchievementData = new ShortData() { Id = long.Parse(achId), Name = reqAch.Name.En }
-                    };
-                    await PopuplateAchievemnetRequiremenets(db, achRequirements);
-                    requirements.Required.Add(achRequirements);
+                        var qf = "OA=";
+                        var achId = item.Remove(0, qf.Length);
+                        var reqAch = await db.GetAsync<AchievementData>($"Achievement/{achId}");
+                        if (reqAch == null) continue;
+                        var achRequirements = new Requirements()
+                        {
+                            AchievementData = new ShortData() { Id = long.Parse(achId), Name = reqAch.Name.En }
+                        };
+                        await PopuplateAchievemnetRequiremenets(db, achRequirements);
+                        requirements.Required.Add(achRequirements);
+                    }
+
+                    if (item.StartsWith("Qf"))
+                    {
+                        var qf = "Qf=";
+                        var questFinished = item.Remove(0, qf.Length);
+                        var reqQuest = await db.GetAsync<QuestData>($"Quest/{questFinished}");
+                        if (reqQuest == null) continue;
+                        var questRequirements = new Requirements()
+                        {
+                            QuestData = new ShortData() { Id = reqQuest.Id, Name = reqQuest.Name.En }
+                        };
+                        await PopulateQuestRequirements(db, questRequirements);
+                        requirements.Required.Add(questRequirements);
+                    }
                 }
             }
         }
