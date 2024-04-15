@@ -170,30 +170,14 @@ namespace Baguettefy.Commands
             public string ToPlantUml()
             {
                 var plant = @"
-@startwbs
-<style>
-' this time, scoping to wbsDiagram
-wbsDiagram {
-
-  ' Here we introduce a global style, i.e. not targeted to any element
-  ' thus all lines (meaning connector and borders,
-  ' there are no other lines in WBS) are black by default
-  Linecolor black
-
-  ' But we can also target a diagram specific element, like arrow
-   arrow {
-    ' note that Connectors are actually ""Arrows""; this may change in the future
-    ' so this means all Connectors and Arrows are now going to be green
-    LineColor green
-  }
-
-}
-</style>
-
+@startmindmap
+skinparam dpi 192
+scale 1080 height
+scale 1920 width
 ";
                 UpdatePlant(0, ref plant);
 
-                plant += "\n@endwbs";
+                plant += "\n@endmindmap";
 
 
                 return plant;
