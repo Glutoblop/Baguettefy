@@ -9,6 +9,7 @@ docker rm baguette-container
 
 docker build --no-cache --tag baguette-image .\
 
-docker run -d --restart=always --name baguette-container baguette-image
+::docker run -d --restart=always --name baguette-container baguette-image
+docker run -d --name baguette-container baguette-image
 
 :: set /p DUMMY=Hit ENTER to continue...

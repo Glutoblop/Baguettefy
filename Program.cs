@@ -3,6 +3,8 @@ using Baguettefy.Core;
 using Baguettefy.Core.Interfaces;
 using Baguettefy.Core.Logging;
 using Baguettefy.Data;
+using Baguettefy.Data.DofusDb.Achievements;
+using Baguettefy.Data.DofusDb.Quests;
 using Baguettefy.Data.Quests;
 using Discord;
 using Discord.Commands;
@@ -26,32 +28,40 @@ namespace Baguettefy
         {
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Utc };
 
-            var config = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
-                .AddJsonFile("config.json")
-                .Build();
+            try
+            {
+                var config = new ConfigurationBuilder()
+                    .SetBasePath(AppContext.BaseDirectory)
+                    .AddJsonFile("config.json")
+                    .Build();
 
-            using IHost host = Host.CreateDefaultBuilder()
-                .ConfigureServices((_, services) => services
-                    .AddSingleton(config)
-                    .AddSingleton(x => new DiscordSocketClient(new DiscordSocketConfig
-                    {
-                        GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent,
-                        AlwaysDownloadUsers = true
-                    }))
-                    .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(),
-                        new InteractionServiceConfig() { DefaultRunMode = RunMode.Async }))
-                    .AddSingleton<InteractionHandler>()
-                    .AddSingleton<PrefixHandler>()
-                    .AddSingleton(x => new CommandService(new CommandServiceConfig()
-                    {
-                        DefaultRunMode = Discord.Commands.RunMode.Async
-                    }))
-                    .AddSingleton<ILogger>(s => new ConsoleLogger(ConstantData.LogType))
-                    .AddSingleton<IFirebaseDatabase>(s => new CachedFirebaseDatabase())
-                ).Build();
+                using IHost host = Host.CreateDefaultBuilder()
+                    .ConfigureServices((_, services) => services
+                        .AddSingleton(config)
+                        .AddSingleton(x => new DiscordSocketClient(new DiscordSocketConfig
+                        {
+                            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent,
+                            AlwaysDownloadUsers = true
+                        }))
+                        .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(),
+                            new InteractionServiceConfig() { DefaultRunMode = RunMode.Async }))
+                        .AddSingleton<InteractionHandler>()
+                        .AddSingleton<PrefixHandler>()
+                        .AddSingleton(x => new CommandService(new CommandServiceConfig()
+                        {
+                            DefaultRunMode = Discord.Commands.RunMode.Async
+                        }))
+                        .AddSingleton<ILogger>(s => new ConsoleLogger(ConstantData.LogType))
+                        .AddSingleton<IFirebaseDatabase>(s => new CachedFirebaseDatabase())
+                    ).Build();
 
-            await RunAsync(host);
+                await RunAsync(host);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Big Crash: {e}");
+                throw;
+            }
         }
 
         public async Task RunAsync(IHost host)
@@ -71,9 +81,13 @@ namespace Baguettefy
             db.CachedCollections = new Dictionary<string, Type>()
             {
                 {"Completed", typeof(CacheComplete)},
-                {"Quest", typeof(QuestData)}
-            };
 
+                {"QuestCategories", typeof(AllQuestCategories)},
+                {"Quest", typeof(QuestData)},
+
+                {"AchievementCategories", typeof(AllAchievementCategories)},
+                {"Achievement", typeof(AchievementData)}
+            };
             var databaseUrl = config["firebaseDatabaseUrl"];
             var serviceAccount = config["firebaseServiceAccount"];
             await db.Init(databaseUrl, serviceAccount);

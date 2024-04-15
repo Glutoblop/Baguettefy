@@ -1,4 +1,6 @@
 ﻿using Baguettefy.Core.Interfaces;
+using Baguettefy.Data.DofusDb.Achievements;
+using Baguettefy.Data.DofusDb.Quests;
 using Baguettefy.Data.Quests;
 using Discord;
 using Discord.Interactions;
@@ -126,27 +128,22 @@ namespace Baguettefy.Commands
             return false;
         }
 
-        public class ShortQuestData
+        //Short data for either Achievement or Quest info
+        public class ShortData
         {
-            public int Id { get; set; }
+            public long Id { get; set; }
             public string Name { get; set; }
-
-            public ShortQuestData(QuestData questData)
-            {
-                Id = questData.Id;
-                Name = questData.Name.En;
-            }
         }
 
-        public class QuestRequirements
+        public class Requirements
         {
-            public ShortQuestData Quest { get; set; }
+            public ShortData Data { get; set; }
 
             public int LevelRequired { get; set; }
 
             public List<String> ItemsRequired { get; set; } = new List<String>();
 
-            public List<QuestRequirements> QuestsRequired { get; set; } = new List<QuestRequirements>();
+            public List<Requirements> QuestsRequired { get; set; } = new List<Requirements>();
 
             public string ToMermaid()
             {
@@ -164,10 +161,10 @@ namespace Baguettefy.Commands
                 for (var index = 0; index < QuestsRequired.Count; index++)
                 {
                     var quest = QuestsRequired[index];
-                    mermaid += $"\n    {startStep}({Quest.Name}) --> {++step}({quest.Quest.Name})";
+                    mermaid += $"\n    {startStep}({Data.Name}) --> {++step}({quest.Data.Name})";
                 }
 
-                foreach (QuestRequirements quest in QuestsRequired)
+                foreach (Requirements quest in QuestsRequired)
                 {
                     quest.UpdateMermaid(ref step, ref mermaid);
                 }
@@ -198,7 +195,7 @@ wbsDiagram {
 
 ";
                 int step = 0;
-                plant += $"* {Quest.Name}\n";
+                plant += $"* {Data.Name}\n";
                 step++;
                 UpdatePlant(ref step, ref plant);
 
@@ -223,7 +220,7 @@ wbsDiagram {
                 {
                     var quest = QuestsRequired[index];
                     PutAsteriks(ref plant, step);
-                    plant += $" {quest.Quest.Name}\n";
+                    plant += $" {quest.Data.Name}\n";
                 }
 
                 if (QuestsRequired.Count > 0)
@@ -231,7 +228,7 @@ wbsDiagram {
                     step++;
                 }
 
-                foreach (QuestRequirements quest in QuestsRequired)
+                foreach (Requirements quest in QuestsRequired)
                 {
                     quest.UpdatePlant(ref step, ref plant);
                 }
@@ -239,7 +236,7 @@ wbsDiagram {
 
         }
 
-        [SlashCommand("quest_prerequisites", "Search an English/French quest name for its prerequisites.", runMode: RunMode.Async)]
+        [SlashCommand("prerequisites", "Search an English/French quest name for its prerequisites.", runMode: RunMode.Async)]
         public async Task QuestPrerequisites(string name)
         {
             await DeferAsync(true);
@@ -264,23 +261,55 @@ wbsDiagram {
                 return false;
             });
 
-            if (foundQuest == null)
+            AchievementData? foundAchievement = null;
+            await db.GetAllAsync<AchievementData>($"Achievement", (path, item) =>
+            {
+                if (item.Name.En.ToLowerInvariant().Contains(name.ToLowerInvariant()))
+                {
+                    foundAchievement = item;
+                    return true;
+                }
+
+                if (item.Name.Fr.ToLowerInvariant().Contains(name.ToLowerInvariant()))
+                {
+                    foundAchievement = item;
+                    return true;
+                }
+
+                return false;
+            });
+
+            if (foundQuest == null && foundAchievement == null)
             {
                 await ModifyOriginalResponseAsync(properties =>
                 {
                     properties.Content = $"\ud83e\udd56 Non non Baguette \ud83e\udd56\n" +
-                                         $"Could not find any quest containing the phrase: {name}";
+                                         $"Could not find any quest/achievement containing the phrase: {name}";
                 });
                 return;
             }
 
             try
             {
-                QuestRequirements requirements = new QuestRequirements()
+                Requirements requirements = new Requirements();
+                if (foundQuest != null)
                 {
-                    Quest = new ShortQuestData(foundQuest)
-                };
-                await PopulateRequirements(db, requirements);
+                    requirements.Data = new ShortData()
+                    {
+                        Id = foundQuest.Id,
+                        Name = foundQuest.Name.En
+                    };
+                    await PopulateQuestRequirements(db, requirements);
+                }
+                else
+                {
+                    requirements.Data = new ShortData()
+                    {
+                        Id = foundAchievement.Id,
+                        Name = foundAchievement.Name.En
+                    };
+                    await PopuplateAchievemnetRequiremenets(db, requirements);
+                }
 
                 //var mermaid = requirements.ToMermaid();
                 var plant = requirements.ToPlantUml();
@@ -295,13 +324,25 @@ wbsDiagram {
                 var channel = await Context.Guild.GetChannelAsync(Context.Interaction.ChannelId.Value);
                 if (channel is ITextChannel c)
                 {
-                    var msg = await c.SendMessageAsync($"# Quest chain found for: {foundQuest.Name.En}");
+                    IUserMessage? msg = null;
+                    string imageName = "";
+                    if (foundQuest != null)
+                    {
+                        imageName = foundQuest.Name.En;
+                        msg = await c.SendMessageAsync($"# Quest chain found for: {foundQuest.Name.En}");
+                    }
+                    else
+                    {
+                        imageName = foundAchievement.Name.En;
+                        msg = await c.SendMessageAsync($"# Achievement chain found for: {foundAchievement.Name.En}");
+                    }
+
                     await msg.ModifyAsync(properties =>
                     {
                         properties.Attachments =
                             new[]
                             {
-                                new FileAttachment(imgStream, $"{foundQuest.Name}.png")
+                                new FileAttachment(imgStream, $"{imageName}.png")
                             };
                     });
                 }
@@ -321,7 +362,7 @@ wbsDiagram {
             }
         }
 
-        private async Task PopulateRequirements(IFirebaseDatabase db, QuestRequirements requirements)
+        private async Task PopulateQuestRequirements(IFirebaseDatabase db, Requirements requirements)
         {
             //Qf=1942&Qf=1945&Qf=1946
             //PL>179&PO=19414
@@ -330,7 +371,7 @@ wbsDiagram {
             //PL = Level Required
             //PO = Possess ItemData
 
-            var quest = await db.GetAsync<QuestData>($"Quest/{requirements.Quest.Id}");
+            var quest = await db.GetAsync<QuestData>($"Quest/{requirements.Data.Id}");
 
             var split = quest.StartCriterion.Split("&".ToCharArray());
             foreach (var item in split)
@@ -380,9 +421,9 @@ wbsDiagram {
                     var reqQuest = await db.GetAsync<QuestData>($"Quest/{questFinished}");
                     if (reqQuest != null)
                     {
-                        requirements.QuestsRequired.Add(new QuestRequirements()
+                        requirements.QuestsRequired.Add(new Requirements()
                         {
-                            Quest = new ShortQuestData(reqQuest)
+                            Data = new ShortData() { Id = reqQuest.Id, Name = reqQuest.Name.En }
                         });
                     }
                 }
@@ -390,9 +431,28 @@ wbsDiagram {
 
             foreach (var questRequired in requirements.QuestsRequired)
             {
-                await PopulateRequirements(db, questRequired);
+                await PopulateQuestRequirements(db, questRequired);
             }
 
         }
+
+        private async Task PopuplateAchievemnetRequiremenets(IFirebaseDatabase db, Requirements requirements)
+        {
+            var achievement = await db.GetAsync<AchievementData>($"Achievement/{requirements.Data.Id}");
+
+            foreach (var achievementObjective in achievement?.Objectives ?? new List<AchievementObjective>())
+            {
+                requirements.QuestsRequired.Add(new Requirements()
+                {
+                    Data = new ShortData() { Id = achievementObjective.Id, Name = achievementObjective.Name.En }
+                });
+            }
+
+            foreach (var questRequired in requirements.QuestsRequired)
+            {
+                await PopuplateAchievemnetRequiremenets(db, questRequired);
+            }
+        }
+
     }
 }
