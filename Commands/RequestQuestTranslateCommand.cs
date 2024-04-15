@@ -139,11 +139,7 @@ namespace Baguettefy.Commands
         {
             public ShortData Data { get; set; }
 
-            public int LevelRequired { get; set; }
-
-            public List<String> ItemsRequired { get; set; } = new List<String>();
-
-            public List<Requirements> QuestsRequired { get; set; } = new List<Requirements>();
+            public List<Requirements> Required { get; set; } = new List<Requirements>();
 
             public string ToMermaid()
             {
@@ -158,13 +154,13 @@ namespace Baguettefy.Commands
             private void UpdateMermaid(ref int step, ref string mermaid)
             {
                 var startStep = step;
-                for (var index = 0; index < QuestsRequired.Count; index++)
+                for (var index = 0; index < Required.Count; index++)
                 {
-                    var quest = QuestsRequired[index];
+                    var quest = Required[index];
                     mermaid += $"\n    {startStep}({Data.Name}) --> {++step}({quest.Data.Name})";
                 }
 
-                foreach (Requirements quest in QuestsRequired)
+                foreach (Requirements quest in Required)
                 {
                     quest.UpdateMermaid(ref step, ref mermaid);
                 }
@@ -194,10 +190,7 @@ wbsDiagram {
 </style>
 
 ";
-                int step = 0;
-                plant += $"* {Data.Name}\n";
-                step++;
-                UpdatePlant(ref step, ref plant);
+                UpdatePlant(0, ref plant);
 
                 plant += "\n@endwbs";
 
@@ -214,23 +207,20 @@ wbsDiagram {
             }
 
 
-            private void UpdatePlant(ref int step, ref string plant)
+            private void UpdatePlant(int step, ref string plant)
             {
-                for (var index = 0; index < QuestsRequired.Count; index++)
-                {
-                    var quest = QuestsRequired[index];
-                    PutAsteriks(ref plant, step);
-                    plant += $" {quest.Data.Name}\n";
-                }
+                PutAsteriks(ref plant, step);
+                plant += $" {Data.Name}\n";
 
-                if (QuestsRequired.Count > 0)
+                foreach (var req in Required)
                 {
-                    step++;
-                }
+                    PutAsteriks(ref plant, step+1);
+                    plant += $" {req.Data.Name}\n";
 
-                foreach (Requirements quest in QuestsRequired)
-                {
-                    quest.UpdatePlant(ref step, ref plant);
+                    foreach (Requirements childReq in req.Required)
+                    {
+                        childReq.UpdatePlant(step+2, ref plant);
+                    }
                 }
             }
 
@@ -376,60 +366,18 @@ wbsDiagram {
             var split = quest.StartCriterion.Split("&".ToCharArray());
             foreach (var item in split)
             {
-                if (item.StartsWith("PL"))
+                if (!item.StartsWith("Qf")) continue;
+                var qf = "Qf=";
+                var questFinished = item.Remove(0, qf.Length);
+                var reqQuest = await db.GetAsync<QuestData>($"Quest/{questFinished}");
+                if (reqQuest == null) continue;
+                requirements.Required.Add(new Requirements()
                 {
-                    var pl = "PL>";
-                    var levelReq = item.Remove(0, pl.Length);
-                    if (int.TryParse(levelReq, out int level))
-                    {
-                        requirements.LevelRequired = level;
-                    }
-                }
-
-                if (item.StartsWith("PO"))
-                {
-                    var pl = "PO=";
-                    var itemIdReq = item.Remove(0, pl.Length);
-
-                    try
-                    {
-                        HttpResponseMessage response = await client.GetAsync($"https://api.dofusdb.fr/items/{itemIdReq}?lang=en");
-                        if (response.IsSuccessStatusCode)
-                        {
-                            string json = await response.Content.ReadAsStringAsync();
-                            QuestItemData? itemData = JsonConvert.DeserializeObject<QuestItemData>(json);
-                            if (itemData != null)
-                            {
-                                requirements.ItemsRequired.Add(itemData.Name.En);
-                            }
-                            else
-                            {
-                                requirements.ItemsRequired.Add(itemIdReq);
-                            }
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        requirements.ItemsRequired.Add(itemIdReq);
-                    }
-                }
-
-                if (item.StartsWith("Qf"))
-                {
-                    var qf = "Qf=";
-                    var questFinished = item.Remove(0, qf.Length);
-                    var reqQuest = await db.GetAsync<QuestData>($"Quest/{questFinished}");
-                    if (reqQuest != null)
-                    {
-                        requirements.QuestsRequired.Add(new Requirements()
-                        {
-                            Data = new ShortData() { Id = reqQuest.Id, Name = reqQuest.Name.En }
-                        });
-                    }
-                }
+                    Data = new ShortData() { Id = reqQuest.Id, Name = reqQuest.Name.En }
+                });
             }
 
-            foreach (var questRequired in requirements.QuestsRequired)
+            foreach (var questRequired in requirements.Required)
             {
                 await PopulateQuestRequirements(db, questRequired);
             }
@@ -440,17 +388,25 @@ wbsDiagram {
         {
             var achievement = await db.GetAsync<AchievementData>($"Achievement/{requirements.Data.Id}");
 
-            foreach (var achievementObjective in achievement?.Objectives ?? new List<AchievementObjective>())
+            foreach (var achObj in achievement?.Objectives ?? new List<AchievementObjective>())
             {
-                requirements.QuestsRequired.Add(new Requirements()
+                var criterion = achObj.Criterion.Replace("(", "").Replace(")", "");
+                var split = criterion.Split("&".ToCharArray());
+                foreach (var item in split)
                 {
-                    Data = new ShortData() { Id = achievementObjective.Id, Name = achievementObjective.Name.En }
-                });
-            }
+                    if (!item.StartsWith("OA")) continue;
 
-            foreach (var questRequired in requirements.QuestsRequired)
-            {
-                await PopuplateAchievemnetRequiremenets(db, questRequired);
+                    var qf = "OA=";
+                    var achId = item.Remove(0, qf.Length);
+                    var reqAch = await db.GetAsync<AchievementData>($"Achievement/{achId}");
+                    if (reqAch == null) continue;
+                    var achRequirements = new Requirements()
+                    {
+                        Data = new ShortData() { Id = long.Parse(achId), Name = reqAch.Name.En }
+                    };
+                    await PopuplateAchievemnetRequiremenets(db, achRequirements);
+                    requirements.Required.Add(achRequirements);
+                }
             }
         }
 
