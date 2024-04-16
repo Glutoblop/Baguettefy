@@ -1,5 +1,6 @@
 ﻿using Baguettefy.Core.Interfaces;
 using Baguettefy.Data.DofusDb.Achievements;
+using Baguettefy.Data.DofusDb.Requirements;
 using Baguettefy.Data.Quests;
 using Discord;
 using Discord.Interactions;
@@ -96,121 +97,6 @@ namespace Baguettefy.Commands
 
         }
 
-        private QuestData ContainsName(AllQuestsData allQuests, string name)
-        {
-            if (allQuests?.Quests == null) return null;
-
-            foreach (var quest in allQuests.Quests)
-            {
-                if (!ContainsName(quest, name)) continue;
-                return quest;
-            }
-
-            return null;
-        }
-
-        private bool ContainsName(QuestData questData, string name)
-        {
-            if (questData == null) return false;
-            var questName = questData.Name.En.ToLowerInvariant();
-            if (questName.Contains(name)) return false;
-            if (questData.Steps == null) return false;
-
-            foreach (Step? questStep in questData.Steps)
-            {
-                var stepName = questStep.Name.En.ToLowerInvariant();
-                if (!stepName.Contains(name)) continue;
-                return true;
-            }
-
-            return false;
-        }
-
-        //Short data for either Achievement or Quest info
-        public class ShortData
-        {
-            public long Id { get; set; }
-            public string Name { get; set; }
-        }
-
-        public class Requirements
-        {
-            public ShortData QuestData { get; set; }
-            public ShortData AchievementData { get; set; }
-
-            public List<Requirements> Required { get; set; } = new List<Requirements>();
-
-            public string ToMermaid()
-            {
-                string mermaid = "flowchart TD\r\n";
-                int step = 0;
-
-                UpdateMermaid(ref step, ref mermaid);
-
-                return mermaid;
-            }
-
-            private void UpdateMermaid(ref int step, ref string mermaid)
-            {
-                var startStep = step;
-                for (var index = 0; index < Required.Count; index++)
-                {
-                    var quest = Required[index];
-                    //mermaid += $"\n    {startStep}({Data.Name}) --> {++step}({quest.Data.Name})";
-                }
-
-                foreach (Requirements quest in Required)
-                {
-                    quest.UpdateMermaid(ref step, ref mermaid);
-                }
-            }
-
-            public string ToPlantUml()
-            {
-                string plant = "";
-                UpdatePlant(0, ref plant);
-
-                var startGraph = @"@startmindmap";
-                var start =
-                            $"skinparam dpi {68}\n" +
-                            $"scale max {4000} height\n" +
-                            $"scale max {4000} width\n";
-
-                var value = $"{startGraph}\n{start}{plant}\n@endmindmap";
-
-
-                return value;
-            }
-
-            private static void PutAsteriks(ref string value, int count)
-            {
-                for (int i = 0; i <= count; i++)
-                {
-                    value += "*";
-                }
-            }
-
-
-            private void UpdatePlant(int step, ref string plant)
-            {
-                PutAsteriks(ref plant, step);
-                plant += $" {(QuestData == null ? $"<:1f451:> {AchievementData.Name}" : $"<:1f4d6:> {QuestData.Name}")}\n";
-
-                foreach (var req in Required)
-                {
-                    PutAsteriks(ref plant, step + 1);
-                    plant +=
-                        $" {(req.QuestData == null ? $"<:1f451:> {req.AchievementData.Name}" : $"<:1f4d6:> {req.QuestData.Name}")}\n";
-
-                    foreach (Requirements childReq in req.Required)
-                    {
-                        childReq.UpdatePlant(step + 2, ref plant);
-                    }
-                }
-            }
-
-        }
-
         [SlashCommand("prerequisites", "Search an English/French quest name for its prerequisites.", runMode: RunMode.Async)]
         public async Task QuestPrerequisites(string name)
         {
@@ -269,7 +155,7 @@ namespace Baguettefy.Commands
                 Requirements requirements = new Requirements();
                 if (foundQuest != null)
                 {
-                    requirements.QuestData = new ShortData()
+                    requirements.QuestData = new RequirementInfo()
                     {
                         Id = foundQuest.Id,
                         Name = foundQuest.Name.En
@@ -278,7 +164,7 @@ namespace Baguettefy.Commands
                 }
                 else
                 {
-                    requirements.AchievementData = new ShortData()
+                    requirements.AchievementData = new RequirementInfo()
                     {
                         Id = foundAchievement.Id,
                         Name = foundAchievement.Name.En
@@ -358,7 +244,7 @@ namespace Baguettefy.Commands
                 if (reqQuest == null) continue;
                 requirements.Required.Add(new Requirements()
                 {
-                    QuestData = new ShortData() { Id = reqQuest.Id, Name = reqQuest.Name.En }
+                    QuestData = new RequirementInfo() { Id = reqQuest.Id, Name = reqQuest.Name.En }
                 });
             }
 
@@ -387,7 +273,7 @@ namespace Baguettefy.Commands
                         if (reqAch == null) continue;
                         var achRequirements = new Requirements()
                         {
-                            AchievementData = new ShortData() { Id = long.Parse(achId), Name = reqAch.Name.En }
+                            AchievementData = new RequirementInfo() { Id = long.Parse(achId), Name = reqAch.Name.En }
                         };
                         await PopuplateAchievemnetRequiremenets(db, achRequirements);
                         requirements.Required.Add(achRequirements);
@@ -401,7 +287,7 @@ namespace Baguettefy.Commands
                         if (reqQuest == null) continue;
                         var questRequirements = new Requirements()
                         {
-                            QuestData = new ShortData() { Id = reqQuest.Id, Name = reqQuest.Name.En }
+                            QuestData = new RequirementInfo() { Id = reqQuest.Id, Name = reqQuest.Name.En }
                         };
                         await PopulateQuestRequirements(db, questRequirements);
                         requirements.Required.Add(questRequirements);
