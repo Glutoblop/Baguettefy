@@ -1,3 +1,5 @@
+name: baguettefy
+
 services:
   baguettefy:
     restart: always
