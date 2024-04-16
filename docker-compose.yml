@@ -1,0 +1,5 @@
+services:
+  baguettefy:
+    restart: always
+    build: .
+    
