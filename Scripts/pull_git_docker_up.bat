@@ -10,8 +10,8 @@ git clone --branch main https://gitlab.com/nyetools/baguettefy.git build
 :: Alongside this script is a dependency for my bot, a config file the bot needs to grab when it runs, copy that in. 
 echo f | xcopy ".\config.json" ".\build\config.json"
 
-:: Find that script inside the repo, and run it. 
-cd ./build/Scripts
-call launch_docker.bat
+:: Launch docker-compose inside build folder 
+cd ./build
+call docker-compose up -d
 
 ::set /p DUMMY=Hit ENTER to continue...
