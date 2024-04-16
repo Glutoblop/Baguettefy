@@ -170,34 +170,11 @@ namespace Baguettefy.Commands
                 string plant = "";
                 UpdatePlant(0, ref plant);
 
-                //This is  little hacky, but it lerps between the max lines and min lines
-                //Using that T value it will proportionally scale up/down the size and dpi of the output to try and fit the image in
-                //These values are all magic numbers using No More Mystery Ice Guy as the max and
-                //then raising the min until it worked for the majority of small quests.
-                //Tested in https://www.planttext.com/ to check settings
-
-                int max = 6200;
-                int min = 1000;
-                var length = plant.Length;
-                float t = MathUtils.NormaliseRange(length, min, max);
-
-                int maxDpi = 24;
-                int minDpi = 192;
-                int dpi = (int)MathUtils.Lerp(minDpi, maxDpi, t);
-
-                int maxHeight = 4320;
-                int minHeight = 1080;
-                int height = (int)MathUtils.Lerp(minHeight, maxHeight, t);
-
-                int maxWidth = 7680;
-                int minWidth = 1920;
-                int width = (int)MathUtils.Lerp(minWidth, maxWidth, t);
-
                 var startGraph = @"@startmindmap";
                 var start =
-                            $"skinparam dpi {dpi}\n" +
-                            $"scale {height} height\n" +
-                            $"scale {width} width\n";
+                            $"skinparam dpi {68}\n" +
+                            $"scale max {4000} height\n" +
+                            $"scale max {4000} width\n";
 
                 var value = $"{startGraph}\n{start}{plant}\n@endmindmap";
 
