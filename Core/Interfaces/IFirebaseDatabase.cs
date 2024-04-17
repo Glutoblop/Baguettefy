@@ -6,7 +6,7 @@
 
         public event Action<KeyValuePair<string, object>> OnDataPut;
 
-        Task Init(string databaseUrl, string serviceAccount, string localCacheName = "CachedDatabase/");
+        Task Init(string databaseUrl, string serviceAccount, string localCacheName = "CachedDatabase");
 
         Task<T> GetAsync<T>(string path) where T : class;
 

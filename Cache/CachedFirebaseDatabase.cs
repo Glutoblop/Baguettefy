@@ -20,7 +20,7 @@ namespace Baguettefy.Cache
 
         private FirebaseClient _Client;
 
-        private string _baseDirectory = "CachedDatabase/";
+        private string _baseDirectory = "CachedDatabase";
 
         public Dictionary<string, Type> CachedCollections { get; set; } = new();
 
@@ -57,9 +57,8 @@ namespace Baguettefy.Cache
                 });
         }
 
-        public async Task Init(string databaseUrl, string serviceAccount, string localCacheName = "CachedDatabase/")
+        public async Task Init(string databaseUrl, string serviceAccount, string localCacheName = "CachedDatabase")
         {
-            if (!localCacheName.EndsWith("/")) localCacheName += "/";
             _baseDirectory = localCacheName;
 
             BASE_URL = databaseUrl;
@@ -70,23 +69,24 @@ namespace Baguettefy.Cache
             await _SemaphoreSlim.WaitAsync();
             try
             {
-                Directory.CreateDirectory(_baseDirectory);
+                Directory.CreateDirectory($"{_baseDirectory}{Path.DirectorySeparatorChar}");
 
                 //Cache all the known collections, this will clear the offline database if any existed.
                 foreach (var cachedCollection in CachedCollections)
                 {
-                    var json = await _Client.Child(cachedCollection.Key)?.OnceAsJsonAsync();
-                    if (json == null)
-                    {
-                        continue;
-                    }
-
                     //Assume that if the folder already exists, its previously been cached, use that.
-                    var cachedDirectory = $"{_baseDirectory}\\{cachedCollection.Key}";
+                    var cachedDirectory = $"{_baseDirectory}{Path.DirectorySeparatorChar}{cachedCollection.Key}";
                     var exists = Directory.Exists(cachedDirectory);
                     if (exists)
                     {
                         Console.WriteLine($"{cachedDirectory} already exists, skipping cache load and using existing.");
+                        continue;
+                    }
+                    Console.WriteLine($"{cachedDirectory} doesn't exist, re-caching..");
+
+                    var json = await _Client.Child(cachedCollection.Key)?.OnceAsJsonAsync();
+                    if (json == null)
+                    {
                         continue;
                     }
 
@@ -116,12 +116,12 @@ namespace Baguettefy.Cache
                     if (dataDic == null) continue;
                     foreach (var dataPair in dataDic)
                     {
-                        var path = $"{cachedCollection.Key}/{dataPair.Key}";
+                        var path = $"{cachedCollection.Key}{Path.DirectorySeparatorChar}{dataPair.Key}";
                         var data = dataPair.Value;
 
                         var dataJson = JsonConvert.SerializeObject(data);
 
-                        FileInfo file = new FileInfo($"{_baseDirectory}/{path}.json");
+                        FileInfo file = new FileInfo($"{_baseDirectory}{Path.DirectorySeparatorChar}{path}.json");
                         var filePath = file.FullName;
                         var directoryName = Path.GetDirectoryName(filePath);
                         Directory.CreateDirectory(directoryName);
@@ -147,7 +147,7 @@ namespace Baguettefy.Cache
             try
             {
                 string? json = null;
-                var offlinePath = $"{_baseDirectory}/{path}.json";
+                var offlinePath = $"{_baseDirectory}{Path.DirectorySeparatorChar}{path}.json";
 
                 //If the offline file exists, use it
                 if (File.Exists(offlinePath))
@@ -190,7 +190,7 @@ namespace Baguettefy.Cache
             await _SemaphoreSlim.WaitAsync();
             try
             {
-                var baseDirectoryPath = $"{_baseDirectory}{path}";
+                var baseDirectoryPath = $"{_baseDirectory}{Path.DirectorySeparatorChar}{path}";
 
                 Directory.CreateDirectory(baseDirectoryPath);
 
@@ -238,7 +238,7 @@ namespace Baguettefy.Cache
             JObject? jsonObj = JsonConvert.DeserializeObject<JObject>(dataJson);
             if (jsonObj != null)
             {
-                FileInfo file = new FileInfo($"{_baseDirectory}/{path}.json");
+                FileInfo file = new FileInfo($"{_baseDirectory}{Path.DirectorySeparatorChar}{path}.json");
                 var filePath = file.FullName;
                 var directoryName = Path.GetDirectoryName(filePath);
                 Directory.CreateDirectory(directoryName);
@@ -262,9 +262,9 @@ namespace Baguettefy.Cache
             try
             {
                 await _Client.Child(path).DeleteAsync();
-                File.Delete($"{_baseDirectory}/{path}.json");
+                File.Delete($"{_baseDirectory}{Path.DirectorySeparatorChar}{path}.json");
 
-                RecursiveDelete(new DirectoryInfo($"{_baseDirectory}/{path}"));
+                RecursiveDelete(new DirectoryInfo($"{_baseDirectory}{Path.DirectorySeparatorChar}{path}"));
             }
             finally
             {
