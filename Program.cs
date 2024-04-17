@@ -90,7 +90,7 @@ namespace Baguettefy
             };
             var databaseUrl = config["firebaseDatabaseUrl"];
             var serviceAccount = config["firebaseServiceAccount"];
-            await db.Init(databaseUrl, serviceAccount);
+            await db.Init(databaseUrl, serviceAccount, "CachedDatabase/");
 
 #if DEBUG
             await new UpdateDatabase().Update(db);

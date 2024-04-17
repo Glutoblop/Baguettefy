@@ -4,4 +4,10 @@ services:
   baguettefy:
     restart: always
     build: .
+    volumes:
+      - db_cache:/app/CachedDatabase
+    
+volumes:
+  db_cache:
+    
     

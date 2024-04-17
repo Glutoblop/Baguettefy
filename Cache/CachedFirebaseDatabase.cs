@@ -22,8 +22,6 @@ namespace Baguettefy.Cache
 
         private string _baseDirectory = "CachedDatabase/";
 
-        private bool _localCache = false;
-
         public Dictionary<string, Type> CachedCollections { get; set; } = new();
 
         private class OfflineObject
@@ -59,21 +57,15 @@ namespace Baguettefy.Cache
                 });
         }
 
-        public async Task Init(string databaseUrl, string serviceAccount, bool cacheLocal = true, string localCacheName = "CachedDatabase/")
+        public async Task Init(string databaseUrl, string serviceAccount, string localCacheName = "CachedDatabase/")
         {
             if (!localCacheName.EndsWith("/")) localCacheName += "/";
             _baseDirectory = localCacheName;
-            _localCache = cacheLocal;
 
             BASE_URL = databaseUrl;
             SERVICE_ACCOUNT_JSON = serviceAccount;
 
             _Client = CreateClient();
-
-            if (!_localCache)
-            {
-                return;
-            }
 
             await _SemaphoreSlim.WaitAsync();
             try
@@ -86,6 +78,15 @@ namespace Baguettefy.Cache
                     var json = await _Client.Child(cachedCollection.Key)?.OnceAsJsonAsync();
                     if (json == null)
                     {
+                        continue;
+                    }
+
+                    //Assume that if the folder already exists, its previously been cached, use that.
+                    var cachedDirectory = $"{_baseDirectory}\\{cachedCollection.Key}";
+                    var exists = Directory.Exists(cachedDirectory);
+                    if (exists)
+                    {
+                        Console.WriteLine($"{cachedDirectory} already exists, skipping cache load and using existing.");
                         continue;
                     }
 
@@ -118,7 +119,6 @@ namespace Baguettefy.Cache
                         var path = $"{cachedCollection.Key}/{dataPair.Key}";
                         var data = dataPair.Value;
 
-                        CanProcessPath(path);
                         var dataJson = JsonConvert.SerializeObject(data);
 
                         FileInfo file = new FileInfo($"{_baseDirectory}/{path}.json");
@@ -146,8 +146,6 @@ namespace Baguettefy.Cache
             await _SemaphoreSlim.WaitAsync();
             try
             {
-                CanProcessPath(path);
-
                 string? json = null;
                 var offlinePath = $"{_baseDirectory}/{path}.json";
 
@@ -192,46 +190,25 @@ namespace Baguettefy.Cache
             await _SemaphoreSlim.WaitAsync();
             try
             {
-                CanProcessPath(path);
-
-                if (!Directory.Exists(path))
-                {
-                    var json = await _Client.Child(path).OnceAsJsonAsync();
-
-                    Dictionary<string, object>? dataDic;
-                    try
-                    {
-                        JArray obj = JArray.Parse(json);
-                        dataDic = new Dictionary<string, object>();
-                        foreach (var token in obj)
-                        {
-                            if (!token.HasValues) continue;
-
-                            var key = token.Path.TrimStart("[".ToCharArray()).TrimEnd("]".ToCharArray());
-                            var value = token.ToString();
-                            var data = JsonConvert.DeserializeObject(value);
-
-                            if (data == null) continue;
-                            dataDic.Add(key, data);
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        dataDic = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
-                    }
-                }
-
                 var baseDirectoryPath = $"{_baseDirectory}{path}";
-                Directory.CreateDirectory(baseDirectoryPath);
 
+                Directory.CreateDirectory(baseDirectoryPath);
 
                 foreach (var filePath in Directory.EnumerateFileSystemEntries(baseDirectoryPath))
                 {
                     var json = await File.ReadAllTextAsync(filePath);
                     var offlineObj = JsonConvert.DeserializeObject<OfflineObject>(json);
-                    if (onItemFound?.Invoke(offlineObj.Key, JsonConvert.DeserializeObject<T>(offlineObj.Json)) ?? false)
+                    if (offlineObj?.Json == null) continue;
+                    try
                     {
-                        break;
+                        if (onItemFound?.Invoke(offlineObj.Key, JsonConvert.DeserializeObject<T>(offlineObj.Json)) ?? false)
+                        {
+                            break;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"Failed to parse json element in GetAllAsync");
                     }
                 }
             }
@@ -256,8 +233,6 @@ namespace Baguettefy.Cache
 
         private async Task Internal_PutAsync<T>(string path, T data)
         {
-            CanProcessPath(path);
-
             var dataJson = JsonConvert.SerializeObject(data);
 
             JObject? jsonObj = JsonConvert.DeserializeObject<JObject>(dataJson);
@@ -286,8 +261,6 @@ namespace Baguettefy.Cache
             await _SemaphoreSlim.WaitAsync();
             try
             {
-                CanProcessPath(path);
-
                 await _Client.Child(path).DeleteAsync();
                 File.Delete($"{_baseDirectory}/{path}.json");
 
@@ -296,22 +269,6 @@ namespace Baguettefy.Cache
             finally
             {
                 _SemaphoreSlim.Release();
-            }
-        }
-
-        private void CanProcessPath(string path)
-        {
-            //TODO - Support subobject access and combinding json objects.
-            //TODO - With the current implementation if you were to access Accounts/1234/Event directly, it can be accessed and edited
-            //TODO - But the object Account/1234 does not know the edit has happened, so will not be updated.
-            //TODO - This could be fixed by either:
-            //TODO -    Whenever you save an object, you climb up the tree and save the changes in the parent object before returning the value
-            //TODO -    Whenever you get an object, you climb down the tree and grab all the subobject values and put them into the parent before you return
-
-            if (path.Split("/").Length > 2 ||
-                path.Split("\\").Length > 2)
-            {
-                // throw new NotSupportedException($"Error accessing: {path}. {nameof(CachedFirebaseDatabase)} only supports a flat Firebase structure, you cannot access sub-objects directly.");
             }
         }
 
