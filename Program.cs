@@ -78,15 +78,15 @@ namespace Baguettefy
             await pCommands.InitialiseAsync();
 
             var db = services.GetRequiredService<IFirebaseDatabase>();
-            db.CachedCollections = new Dictionary<string, Type>()
+            db.CachedCollections = new Dictionary<string, Dictionary<string, object>>()
             {
-                {"Completed", typeof(CacheComplete)},
+                {"Completed", new(){{"Type", typeof(CacheComplete)}, { "ForceUpdate", true}}},
 
-                {"QuestCategories", typeof(AllQuestCategories)},
-                {"Quest", typeof(QuestData)},
+                {"QuestCategories", new() { { "Type", typeof(AllQuestCategories) }, {"ForceUpdate", true}}},
+                {"Quest", new() { { "Type", typeof(QuestData) }, { "ForceUpdate", true } }},
 
-                {"AchievementCategories", typeof(AllAchievementCategories)},
-                {"Achievement", typeof(AchievementData)}
+                {"AchievementCategories", new() { { "Type", typeof(AllAchievementCategories) }, { "ForceUpdate", true } }},
+                {"Achievement", new() { { "Type", typeof(AchievementData) }, { "ForceUpdate", true } }}
             };
             var databaseUrl = config["firebaseDatabaseUrl"];
             var serviceAccount = config["firebaseServiceAccount"];

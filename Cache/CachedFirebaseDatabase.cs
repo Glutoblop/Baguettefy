@@ -22,7 +22,7 @@ namespace Baguettefy.Cache
 
         private string _baseDirectory = "CachedDatabase";
 
-        public Dictionary<string, Type> CachedCollections { get; set; } = new();
+        public Dictionary<string, Dictionary<string, object>> CachedCollections { get; set; } = new();
 
         private class OfflineObject
         {
@@ -77,7 +77,8 @@ namespace Baguettefy.Cache
                     //Assume that if the folder already exists, its previously been cached, use that.
                     var cachedDirectory = $"{_baseDirectory}{Path.DirectorySeparatorChar}{cachedCollection.Key}";
                     var exists = Directory.Exists(cachedDirectory);
-                    if (exists)
+                    var forceUpdate = cachedCollection.Value.TryGetValue("ForceUpdate", out var fVal) && (bool)fVal;
+                    if (exists && !forceUpdate)
                     {
                         Console.WriteLine($"{cachedDirectory} already exists, skipping cache load and using existing.");
                         continue;
