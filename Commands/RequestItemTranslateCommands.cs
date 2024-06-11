@@ -1,6 +1,7 @@
-﻿using Baguettefy.Data.Items;
-using Discord.Interactions;
+﻿using Baguettefy.Data;
+using Baguettefy.Data.Items;
 using Discord;
+using Discord.Interactions;
 using Newtonsoft.Json;
 
 namespace Baguettefy.Commands
@@ -150,5 +151,52 @@ namespace Baguettefy.Commands
         }
 
 
+        [SlashCommand("item_nuggets", "Aproximately how many nuggets does this item generate?", runMode: RunMode.Async)]
+        public async Task GetItemNuggets(
+            [Summary(name:"itemName",description:"The name of the in English.")]string itemName)
+        {
+            await DeferAsync(true);
+
+            try
+            {
+                List<NuggetData>? nuggetData = JsonConvert.DeserializeObject<List<NuggetData>>(await File.ReadAllTextAsync("res/nugget.json"));
+
+                if (nuggetData != null)
+                {
+                    var searchUrl = $"https://api.dofusdu.de/dofus2/en/items/search?query={itemName}&limit=1";
+
+                    HttpResponseMessage response = await client.GetAsync(searchUrl);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string data = await response.Content.ReadAsStringAsync();
+                        ItemData? searchItem = JsonConvert.DeserializeObject<ItemData[]>(data)?.FirstOrDefault();
+                        if (searchItem != null)
+                        {
+                            var nugget = nuggetData.FirstOrDefault(s => s.AnkamaId == searchItem.AnkamaId);
+                            if (nugget != null)
+                            {
+                                await ModifyOriginalResponseAsync(properties =>
+                                {
+                                    properties.Content =
+                                        $"[{searchItem.Name}](https://dofusdb.fr/en/database/object/{searchItem.AnkamaId}) has a Nugget ratio of {nugget.Ratio}";
+                                });
+                                return;
+                            }
+                        }
+
+                    }
+                }
+
+            }
+            catch (Exception e)
+            {
+                //ignored.
+            }
+
+            await ModifyOriginalResponseAsync(properties =>
+            {
+                properties.Content = $"Could not find data on item {itemName}.";
+            });
+        }
     }
 }
