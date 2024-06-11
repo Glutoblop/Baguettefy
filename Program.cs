@@ -1,10 +1,12 @@
 ﻿using Baguettefy.Cache;
+using Baguettefy.Commands;
 using Baguettefy.Core;
 using Baguettefy.Core.Interfaces;
 using Baguettefy.Core.Logging;
 using Baguettefy.Data;
 using Baguettefy.Data.DofusDb.Achievements;
 using Baguettefy.Data.DofusDb.Quests;
+using Baguettefy.Data.Items;
 using Baguettefy.Data.Quests;
 using Discord;
 using Discord.Commands;
@@ -77,16 +79,21 @@ namespace Baguettefy
             var pCommands = services.GetRequiredService<PrefixHandler>();
             await pCommands.InitialiseAsync();
 
+            bool forceUpdate = true;
+#if DEBUG
+            forceUpdate = false;
+#endif
+
             var db = services.GetRequiredService<IFirebaseDatabase>();
             db.CachedCollections = new Dictionary<string, Dictionary<string, object>>()
             {
-                {"Completed", new(){{"Type", typeof(CacheComplete)}, { "ForceUpdate", true}}},
+                {"Completed", new(){{"Type", typeof(CacheComplete)}, { "ForceUpdate", forceUpdate}}},
 
-                {"QuestCategories", new() { { "Type", typeof(AllQuestCategories) }, {"ForceUpdate", true}}},
-                {"Quest", new() { { "Type", typeof(QuestData) }, { "ForceUpdate", true } }},
+                {"QuestCategories", new() { { "Type", typeof(AllQuestCategories) }, {"ForceUpdate", forceUpdate}}},
+                {"Quest", new() { { "Type", typeof(QuestData) }, { "ForceUpdate", forceUpdate } }},
 
-                {"AchievementCategories", new() { { "Type", typeof(AllAchievementCategories) }, { "ForceUpdate", true } }},
-                {"Achievement", new() { { "Type", typeof(AchievementData) }, { "ForceUpdate", true } }}
+                {"AchievementCategories", new() { { "Type", typeof(AllAchievementCategories) }, { "ForceUpdate", forceUpdate } }},
+                {"Achievement", new() { { "Type", typeof(AchievementData) }, { "ForceUpdate", forceUpdate } }}
             };
             var databaseUrl = config["firebaseDatabaseUrl"];
             var serviceAccount = config["firebaseServiceAccount"];
