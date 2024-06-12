@@ -3,7 +3,6 @@ using Baguettefy.Data.Nuggets;
 using Discord;
 using Discord.Interactions;
 using Newtonsoft.Json;
-using System.Net.Http;
 
 namespace Baguettefy.Commands
 {
@@ -20,7 +19,7 @@ namespace Baguettefy.Commands
 
             try
             {
-                List<NuggetData>? nuggetData = JsonConvert.DeserializeObject<List<NuggetData>>(await File.ReadAllTextAsync("res/nugget.json"));
+                List<NuggetData>? nuggetData = await NuggetUtils.GetNuggetData(_HttpClient);
 
                 if (nuggetData != null)
                 {
@@ -63,7 +62,7 @@ namespace Baguettefy.Commands
         {
             await DeferAsync(true);
 
-            List<NuggetData>? nuggetData = JsonConvert.DeserializeObject<List<NuggetData>>(await File.ReadAllTextAsync("res/nugget.json"));
+            List<NuggetData>? nuggetData = await NuggetUtils.GetNuggetData(_HttpClient);
             if (nuggetData == null)
             {
                 await ModifyOriginalResponseAsync(properties =>
@@ -118,7 +117,7 @@ namespace Baguettefy.Commands
 
             await ModifyOriginalResponseAsync(properties =>
             {
-                properties.Content = $"Page: 1/{nuggetData.Count/NuggetUtils.ITEMS_PER_PAGE}";
+                properties.Content = $"Page: 1/{nuggetData.Count / NuggetUtils.ITEMS_PER_PAGE}";
                 properties.Embeds = embeds.Select(s => s.Build()).ToArray();
                 properties.Components = components.Build();
             });

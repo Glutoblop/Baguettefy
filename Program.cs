@@ -1,12 +1,11 @@
 ﻿using Baguettefy.Cache;
-using Baguettefy.Commands;
 using Baguettefy.Core;
 using Baguettefy.Core.Interfaces;
 using Baguettefy.Core.Logging;
 using Baguettefy.Data;
 using Baguettefy.Data.DofusDb.Achievements;
 using Baguettefy.Data.DofusDb.Quests;
-using Baguettefy.Data.Items;
+using Baguettefy.Data.Nuggets;
 using Baguettefy.Data.Quests;
 using Discord;
 using Discord.Commands;
@@ -29,6 +28,8 @@ namespace Baguettefy
         public async Task MainAsync()
         {
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Utc };
+
+            await NuggetUtils.Init();
 
             try
             {

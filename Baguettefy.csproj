@@ -14,10 +14,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="res\CachedNuggets.zip" />
     <None Remove="res\nugget.json" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="res\CachedNuggets.zip">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="res\nugget.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

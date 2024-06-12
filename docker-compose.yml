@@ -6,8 +6,10 @@ services:
     build: .
     volumes:
       - db_cache:/app/CachedDatabase
+      - nugget_cache:/app/CachedNuggets
     
 volumes:
   db_cache:
+  nugget_cache:
     
     

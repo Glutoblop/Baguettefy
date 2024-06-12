@@ -4,7 +4,6 @@ using Baguettefy.Data.Nuggets;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using FirebaseAdmin.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 
@@ -54,7 +53,7 @@ namespace Baguettefy
 
                 await arg.DeferAsync(true);
 
-                List<NuggetData>? nuggetData = JsonConvert.DeserializeObject<List<NuggetData>>(await File.ReadAllTextAsync("res/nugget.json"));
+                List<NuggetData>? nuggetData = await NuggetUtils.GetNuggetData(_HttpClient);
                 if (nuggetData == null)
                 {
                     await arg.ModifyOriginalResponseAsync(properties =>
