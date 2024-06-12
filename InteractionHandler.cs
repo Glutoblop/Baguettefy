@@ -65,18 +65,21 @@ namespace Baguettefy
                     return;
                 }
 
-                List<Tuple<ItemData, NuggetData>> items = isNext
-                    ? await NuggetData.GetNextOrderedItemsAsync(_HttpClient, nuggetData, startingIndex)
-                    : await NuggetData.GetPreviousOrderedItemsAsync(_HttpClient, nuggetData, startingIndex-NuggetData.ITEMS_PER_PAGE-1);
+                var items = isNext
+                    ? await NuggetData.GetNextOrderedItemsAsync(_HttpClient, startingIndex)
+                    : await NuggetData.GetPreviousOrderedItemsAsync(_HttpClient, startingIndex-NuggetData.ITEMS_PER_PAGE-1);
 
                 var embeds = new List<EmbedBuilder>();
 
                 foreach (var item in items)
                 {
+                    var nugget = nuggetData.FirstOrDefault(s => s.AnkamaId == item.AnkamaId);
+                    if(nugget == null) continue;
+
                     embeds.Add(new EmbedBuilder()
-                        .WithTitle(item.Item1.Name)
-                        .WithThumbnailUrl(item.Item1.ImageUrls.Hd.AbsoluteUri)
-                        .AddField("Nuggets", $"{item.Item2.Ratio}"));
+                        .WithTitle(item.Name)
+                        .WithThumbnailUrl(item.ImageUrls.Sd.AbsoluteUri)
+                        .AddField("Nuggets", $"{nugget.Ratio}"));
                 }
 
                 var lastItemIndex = startingIndex + items.Count;

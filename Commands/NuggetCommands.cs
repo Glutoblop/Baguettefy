@@ -74,7 +74,7 @@ namespace Baguettefy.Commands
                 return;
             }
 
-            List<Tuple<ItemData, NuggetData>> items = await NuggetData.GetNextOrderedItemsAsync(_Client, nuggetData, 0);
+            List<ItemData> items = await NuggetData.GetNextOrderedItemsAsync(_Client, 0);
 
             if (items.Count == 0)
             {
@@ -89,10 +89,14 @@ namespace Baguettefy.Commands
 
             foreach (var item in items)
             {
+                var item1 = item;
+                var nugget = nuggetData.FirstOrDefault(s => s.AnkamaId == item1.AnkamaId);
+                if(nugget == null) continue;
+
                 embeds.Add(new EmbedBuilder()
-                    .WithTitle(item.Item1.Name)
-                    .WithThumbnailUrl(item.Item1.ImageUrls.Hd.AbsoluteUri)
-                    .AddField("Nuggets", $"{item.Item2.Ratio}"));
+                    .WithTitle(item.Name)
+                    .WithThumbnailUrl(item.ImageUrls.Sd.AbsoluteUri)
+                    .AddField("Nuggets", $"{nugget.Ratio}"));
             }
 
             var components = new ComponentBuilder

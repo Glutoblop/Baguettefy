@@ -13,37 +13,19 @@ namespace Baguettefy.Data.Nuggets
         [JsonProperty("recyclingNuggets")]
         public float Ratio { get; set; }
 
-        public static async Task<List<Tuple<ItemData, NuggetData>>> GetNextOrderedItemsAsync(HttpClient client, List<NuggetData> nuggetData, int nuggetIndex)
+        public static async Task<List<ItemData>> GetNextOrderedItemsAsync(HttpClient client, int nuggetIndex)
         {
-            List<Tuple<ItemData, NuggetData>> items = new List<Tuple<ItemData, NuggetData>>();
+            List<ItemData> items = new List<ItemData>();
 
-            var categories = new string[]
-            {
-                "https://api.dofusdu.de/dofus2/en/items/resources/{0}",
-                "https://api.dofusdu.de/dofus2/en/items/consumables/{0}",
-                "https://api.dofusdu.de/dofus2/en/items/equipment/{0}"
-            };
-
+            List<NuggetData>? nuggetData = JsonConvert.DeserializeObject<List<NuggetData>>(await File.ReadAllTextAsync("res/nugget.json"));
+            if (nuggetData == null) return items;
             List<NuggetData> orderedNuggets = nuggetData.OrderByDescending(s => s.Ratio).ToList();
             
             for(; nuggetIndex < orderedNuggets.Count && nuggetIndex >= 0; nuggetIndex++)
             {
                 NuggetData nugget = orderedNuggets[nuggetIndex];
 
-                foreach (var category in categories)
-                {
-                    var url = string.Format(category, nugget.AnkamaId);
-
-                    HttpResponseMessage response = await client.GetAsync(url);
-                    if (!response.IsSuccessStatusCode) continue;
-
-                    string data = await response.Content.ReadAsStringAsync();
-                    ItemData? itemData = JsonConvert.DeserializeObject<ItemData>(data);
-                    if (itemData == null) continue;
-
-                    items.Add(new Tuple<ItemData, NuggetData>(itemData, nugget));
-                    break;
-                }
+                await TestMethod(client, nugget, items);
 
                 if (items.Count >= ITEMS_PER_PAGE)
                 {
@@ -54,47 +36,73 @@ namespace Baguettefy.Data.Nuggets
             return items;
         }
 
-        public static async Task<List<Tuple<ItemData, NuggetData>>> GetPreviousOrderedItemsAsync(HttpClient client, List<NuggetData> nuggetData, int startingIndex)
+        public static async Task<List<ItemData>> GetPreviousOrderedItemsAsync(HttpClient client, int nuggetIndex)
         {
-            List<Tuple<ItemData, NuggetData>> items = new List<Tuple<ItemData, NuggetData>>();
+            List<ItemData> items = new List<ItemData>();
 
+            List<NuggetData>? nuggetData = JsonConvert.DeserializeObject<List<NuggetData>>(await File.ReadAllTextAsync("res/nugget.json"));
+            if (nuggetData == null) return items;
+            List<NuggetData> orderedNuggets = nuggetData.OrderByDescending(s => s.Ratio).ToList();
+            
+            for(; nuggetIndex < orderedNuggets.Count && nuggetIndex >= 0; nuggetIndex--)
+            {
+                NuggetData nugget = orderedNuggets[nuggetIndex];
+
+                await TestMethod(client, nugget, items);
+
+                if (items.Count >= ITEMS_PER_PAGE)
+                {
+                    return items;
+                }
+            }
+
+            return items;
+        }
+
+        private static async Task TestMethod(HttpClient client, NuggetData nugget, List<ItemData> items)
+        {
             var categories = new string[]
             {
                 "https://api.dofusdu.de/dofus2/en/items/resources/{0}",
                 "https://api.dofusdu.de/dofus2/en/items/consumables/{0}",
-                "https://api.dofusdu.de/dofus2/en/items/equipment/{0}"
             };
-            
-            List<NuggetData> orderedNuggets = nuggetData.OrderByDescending(s => s.Ratio).ToList();
-            
-            for(; startingIndex < orderedNuggets.Count && startingIndex >= 0; startingIndex--)
+
+            bool found = false;
+
+            foreach (var category in categories)
             {
-                NuggetData nugget = orderedNuggets[startingIndex];
+                var url = string.Format(category, nugget.AnkamaId);
 
-                foreach (var category in categories)
-                {
-                    var searchUrl = string.Format(category, nugget.AnkamaId);
+                HttpResponseMessage response = await client.GetAsync(url);
+                if (!response.IsSuccessStatusCode) continue;
 
-                    HttpResponseMessage response = await client.GetAsync(searchUrl);
-                    if (!response.IsSuccessStatusCode) continue;
+                string data = await response.Content.ReadAsStringAsync();
+                ItemData? itemData = JsonConvert.DeserializeObject<ItemData>(data);
+                if (itemData == null) continue;
 
-                    string data = await response.Content.ReadAsStringAsync();
-                    ItemData? itemData = JsonConvert.DeserializeObject<ItemData>(data);
-                    if (itemData == null) continue;
-
-                    items.Add(new Tuple<ItemData, NuggetData>(itemData, nugget));
-                    break;
-                }
-
-                if (items.Count >= ITEMS_PER_PAGE)
-                {
-                    break;
-                }
+                items.Add(itemData);
+                found = true;
+                break;
             }
 
-            items = items.OrderByDescending(s => s.Item2.Ratio).ToList();
+            if (!found)
+            {
+                var url = $"https://api.dofusdu.de/dofus2/en/items/equipment/{nugget.AnkamaId}";
+                HttpResponseMessage response = await client.GetAsync(url);
+                if (!response.IsSuccessStatusCode) return;
+                string data = await response.Content.ReadAsStringAsync();
+                ItemData itemData = ItemData.FromJson(data);
+                if (itemData == null) return;
 
-            return items;
+                if (itemData.Recipe == null)
+                {
+                    items.Add(itemData);
+                }
+                else
+                {
+                    List<long> recipeItemIds = itemData.Recipe.Select(s => s.ItemAnkamaId).ToList();   
+                }
+            }
         }
     }
 }
