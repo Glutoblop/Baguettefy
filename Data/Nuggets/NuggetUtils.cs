@@ -21,16 +21,16 @@ namespace Baguettefy.Data.Nuggets
 
             if (Directory.Exists(zipFileDestination))
             {
-#if DEBUG
+                Console.WriteLine($"Deleting existing nugget cache.");
                 Directory.Delete(zipFileDestination,true);          
-#else
-                Console.WriteLine($"CacheNuggets already exists, skipping.");
-#endif
+                Console.WriteLine($"Deleted existing nugget cache.");
             }
 
             if (!Directory.Exists(zipFileDestination))
             {
+                Console.WriteLine($"Extracting file to existing nugget cache.");
                 ZipFile.ExtractToDirectory(zipFileSource, zipFileDestination);
+                Console.WriteLine($"Extracted nugget cache.");
             }
             
             using (HttpClient client = new HttpClient())
