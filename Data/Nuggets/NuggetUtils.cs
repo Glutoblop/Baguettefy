@@ -10,59 +10,33 @@ namespace Baguettefy.Data.Nuggets
     {
         public const int ITEMS_PER_PAGE = 5;
 
-        private static bool _Initialised = false;
-
         private static List<NuggetData> _NuggetData = new List<NuggetData>();
+
+        public const string zipFileSource = "res/CachedNuggets.zip";
+        public const string zipFileDestination = $"CachedNuggets";
 
         public static async Task Init()
         {
-            var zipFileSource = "res/CachedNuggets.zip";
-            var zipFileDestination = $"CachedNuggets";
-
             if (Directory.Exists(zipFileDestination))
             {
-                Console.WriteLine($"Deleting existing nugget cache.");
                 Directory.Delete(zipFileDestination,true);          
-                Console.WriteLine($"Deleted existing nugget cache.");
             }
 
             if (!Directory.Exists(zipFileDestination))
             {
-                Console.WriteLine($"Extracting file to existing nugget cache.");
                 ZipFile.ExtractToDirectory(zipFileSource, zipFileDestination);
-                Console.WriteLine($"Extracted nugget cache.");
-            }
-            
-            using (HttpClient client = new HttpClient())
-            {
-                //Comment this out when re-creating the zip file
-                await GetNuggetData(client);
-
-
-                //Uncomment this when wanting to re-create the zip file
-                //List<NuggetData>? nuggetData = await GetNuggetData(client);
-                //if (nuggetData == null) return;
-                //for (var i = 0; i < nuggetData.Count; i++)
-                //{
-                //    var nugget = nuggetData[i];
-                //    await GetNuggetValue(client, nugget.AnkamaId);
-                //
-                //    Console.WriteLine($"## Init {i} / {nuggetData.Count}");
-                //}
-
-                //TODO - Create the zip file from the CachedNuggets folder when its been populated
-                //TODO - Currently just do it manually cause its a very slow process. 
             }
 
-            _Initialised = true;
+            using HttpClient client = new HttpClient();
+            await GetNuggetData(client);
         }
 
-        public static async Task<List<NuggetData>?> GetNuggetData(HttpClient client)
+        public static async Task<List<NuggetData>?> GetNuggetData(HttpClient client, bool ignoreGetCache = false)
         {
             if (_NuggetData?.Count != 0) return _NuggetData;
             List<NuggetData>? nuggetData = JsonConvert.DeserializeObject<List<NuggetData>>(await File.ReadAllTextAsync("res/nugget.json"));
             if (nuggetData == null) return new List<NuggetData>();
-            _NuggetData = nuggetData.OrderByDescending(s => GetNuggetValue(client, s.AnkamaId).GetAwaiter().GetResult()).ToList();
+            _NuggetData = nuggetData.OrderByDescending(s => GetNuggetValue(client, s.AnkamaId, ignoreGetCache).GetAwaiter().GetResult()).ToList();
             return _NuggetData;
         }
 
@@ -77,7 +51,7 @@ namespace Baguettefy.Data.Nuggets
             {
                 NuggetData nugget = orderedNuggets[nuggetIndex];
 
-                var item = await GetItem(client, nugget);
+                var item = await GetItem(client, nugget.AnkamaId);
                 if (item != null) items.Add(item);
 
                 if (items.Count >= ITEMS_PER_PAGE)
@@ -100,7 +74,7 @@ namespace Baguettefy.Data.Nuggets
             {
                 NuggetData nugget = orderedNuggets[nuggetIndex];
 
-                var item = await GetItem(client, nugget);
+                var item = await GetItem(client, nugget.AnkamaId);
                 if (item != null) items.Add(item);
 
                 if (items.Count >= ITEMS_PER_PAGE)
@@ -112,7 +86,7 @@ namespace Baguettefy.Data.Nuggets
             return items;
         }
 
-        private static async Task<ItemData?> GetItem(HttpClient client, NuggetData nugget)
+        public static async Task<ItemData?> GetItem(HttpClient client, long ankamaId)
         {
             var categories = new string[]
             {
@@ -124,7 +98,7 @@ namespace Baguettefy.Data.Nuggets
 
             foreach (var category in categories)
             {
-                var url = string.Format(category, nugget.AnkamaId);
+                var url = string.Format(category, ankamaId);
 
                 HttpResponseMessage response = await client.GetAsync(url);
                 if (!response.IsSuccessStatusCode) continue;
@@ -141,13 +115,13 @@ namespace Baguettefy.Data.Nuggets
 
         private static readonly SemaphoreSlim _GetNuggetValueSemaphore = new SemaphoreSlim(1, 1);
 
-        public static async Task<float> GetNuggetValue(HttpClient client, long ankamaId)
+        public static async Task<float> GetNuggetValue(HttpClient client, long ankamaId, bool ignoreGetCache = false)
         {
             float nuggetValue = 0f;
             try
             {
                 await _GetNuggetValueSemaphore.WaitAsync();
-                nuggetValue = await InternalGetNuggetValue(client, ankamaId);
+                nuggetValue = await InternalGetNuggetValue(client, ankamaId, ignoreGetCache);
             }
             catch (Exception e)
             {
@@ -160,24 +134,22 @@ namespace Baguettefy.Data.Nuggets
             return nuggetValue;
         }
 
-        private static async Task<float> InternalGetNuggetValue(HttpClient client, long ankamaId)
+        private static async Task<float> InternalGetNuggetValue(HttpClient client, long ankamaId, bool ignoreGetCache)
         {
             float nuggetValue = 0;
             ItemData? itemData = null;
             var cachePath = $"CachedNuggets/{ankamaId}";
 
-            if (File.Exists(cachePath))
+            if (!ignoreGetCache)
             {
-                if (!_Initialised)
+                if (File.Exists(cachePath))
                 {
-                    Console.WriteLine($"Item {ankamaId} already cached");
+                    var txt = await File.ReadAllTextAsync(cachePath);
+                    return float.Parse(txt);
                 }
-
-                var txt = await File.ReadAllTextAsync(cachePath);
-                return float.Parse(txt);
             }
 
-            List<NuggetData>? nuggetData = await GetNuggetData(client);
+            List<NuggetData>? nuggetData = JsonConvert.DeserializeObject<List<NuggetData>>(await File.ReadAllTextAsync("res/nugget.json"));
             if (nuggetData == null)
             {
                 Console.WriteLine($"nugget.json doesn't exist");
@@ -215,10 +187,19 @@ namespace Baguettefy.Data.Nuggets
                 }
                 else
                 {
-                    foreach (var recipeItem in itemData.Recipe)
+                    foreach (Recipe? recipeItem in itemData.Recipe)
                     {
-                        var val = await InternalGetNuggetValue(client, recipeItem.ItemAnkamaId);
-                        nuggetValue += (val * 1.5f) * recipeItem.Quantity;
+                        float nuggetBaseValue = await InternalGetNuggetValue(client, recipeItem.ItemAnkamaId, ignoreGetCache);
+                        var recipeItemData = await GetItem(client, recipeItem.ItemAnkamaId);
+                        if (recipeItemData?.Recipe == null || recipeItemData.Recipe.Length == 0)
+                        {
+                            nuggetValue += (nuggetBaseValue * 1.0f) * recipeItem.Quantity;
+                        }
+                        else
+                        {
+                            //TODO - Could be a crafted sub-recipe bonus here...
+                            nuggetValue += (nuggetBaseValue * 1.0f) * recipeItem.Quantity;
+                        }
                     }
                 }
             }
@@ -229,11 +210,6 @@ namespace Baguettefy.Data.Nuggets
             }
 
             await File.WriteAllTextAsync(cachePath, nuggetValue.ToString(CultureInfo.InvariantCulture));
-
-            if (!_Initialised)
-            {
-                Console.WriteLine($"Nugget Value Cached: {itemData?.Name ?? "????"} = {nuggetValue} nuggets");
-            }
 
             return nuggetValue;
         }

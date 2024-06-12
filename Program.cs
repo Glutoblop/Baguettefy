@@ -29,6 +29,8 @@ namespace Baguettefy
         {
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Utc };
 
+            //await GenerateNuggetZip.Generate();
+
             await NuggetUtils.Init();
 
             try
