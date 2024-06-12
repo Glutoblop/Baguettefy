@@ -3,15 +3,16 @@ using Baguettefy.Data.Nuggets;
 using Discord;
 using Discord.Interactions;
 using Newtonsoft.Json;
+using System.Net.Http;
 
 namespace Baguettefy.Commands
 {
     public class NuggetCommands : InteractionModuleBase<InteractionContext>
     {
-        static readonly HttpClient _Client = new HttpClient();
+        static readonly HttpClient _HttpClient = new HttpClient();
 
 
-        [SlashCommand("item_nuggets", "Aproximately how many nuggets does this item generate?", runMode: RunMode.Async)]
+        [SlashCommand("item-nuggets", "Aproximately how many nuggets does this item generate?", runMode: RunMode.Async)]
         public async Task GetItemNuggets(
             [Summary(name: "itemName", description: "The name of the in English.")] string itemName)
         {
@@ -25,23 +26,21 @@ namespace Baguettefy.Commands
                 {
                     var searchUrl = $"https://api.dofusdu.de/dofus2/en/items/search?query={itemName}&limit=1";
 
-                    HttpResponseMessage response = await _Client.GetAsync(searchUrl);
+                    HttpResponseMessage response = await _HttpClient.GetAsync(searchUrl);
                     if (response.IsSuccessStatusCode)
                     {
                         string data = await response.Content.ReadAsStringAsync();
                         ItemData? searchItem = JsonConvert.DeserializeObject<ItemData[]>(data)?.FirstOrDefault();
                         if (searchItem != null)
                         {
-                            var nugget = nuggetData.FirstOrDefault(s => s.AnkamaId == searchItem.AnkamaId);
-                            if (nugget != null)
+                            var nuggetValue = await NuggetUtils.GetNuggetValue(_HttpClient, searchItem.AnkamaId);
+
+                            await ModifyOriginalResponseAsync(properties =>
                             {
-                                await ModifyOriginalResponseAsync(properties =>
-                                {
-                                    properties.Content =
-                                        $"[{searchItem.Name}](https://dofusdb.fr/en/database/object/{searchItem.AnkamaId}) has a Nugget ratio of {nugget.Ratio}";
-                                });
-                                return;
-                            }
+                                properties.Content =
+                                    $"[{searchItem.Name}](https://dofusdb.fr/en/database/object/{searchItem.AnkamaId}) has a Nugget value of {nuggetValue}";
+                            });
+                            return;
                         }
 
                     }
@@ -74,7 +73,7 @@ namespace Baguettefy.Commands
                 return;
             }
 
-            List<ItemData> items = await NuggetData.GetNextOrderedItemsAsync(_Client, 0);
+            List<ItemData> items = await NuggetUtils.GetNextOrderedItemsAsync(_HttpClient, 0);
 
             if (items.Count == 0)
             {
@@ -89,14 +88,10 @@ namespace Baguettefy.Commands
 
             foreach (var item in items)
             {
-                var item1 = item;
-                var nugget = nuggetData.FirstOrDefault(s => s.AnkamaId == item1.AnkamaId);
-                if(nugget == null) continue;
-
                 embeds.Add(new EmbedBuilder()
                     .WithTitle(item.Name)
                     .WithThumbnailUrl(item.ImageUrls.Sd.AbsoluteUri)
-                    .AddField("Nuggets", $"{nugget.Ratio}"));
+                    .AddField("Nuggets", $"{await NuggetUtils.GetNuggetValue(_HttpClient, item.AnkamaId)}"));
             }
 
             var components = new ComponentBuilder
@@ -108,12 +103,12 @@ namespace Baguettefy.Commands
                         Components = new List<IMessageComponent>()
                         {
                             new ButtonBuilder()
-                                .WithCustomId($"nugget|list|prev|{NuggetData.ITEMS_PER_PAGE}")
+                                .WithCustomId($"nugget|list|prev|{NuggetUtils.ITEMS_PER_PAGE}")
                                 .WithLabel("Prev")
                                 .WithStyle(ButtonStyle.Success).Build(),
 
                             new ButtonBuilder()
-                                .WithCustomId($"nugget|list|next|{NuggetData.ITEMS_PER_PAGE}")
+                                .WithCustomId($"nugget|list|next|{NuggetUtils.ITEMS_PER_PAGE}")
                                 .WithLabel("Next")
                                 .WithStyle(ButtonStyle.Success).Build()
                         }
@@ -123,7 +118,7 @@ namespace Baguettefy.Commands
 
             await ModifyOriginalResponseAsync(properties =>
             {
-                properties.Content = $"Page: 1/{nuggetData.Count/NuggetData.ITEMS_PER_PAGE}";
+                properties.Content = $"Page: 1/{nuggetData.Count/NuggetUtils.ITEMS_PER_PAGE}";
                 properties.Embeds = embeds.Select(s => s.Build()).ToArray();
                 properties.Components = components.Build();
             });

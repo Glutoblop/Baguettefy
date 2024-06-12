@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using Baguettefy.Core.Interfaces;
-using Baguettefy.Data.Items;
 using Baguettefy.Data.Nuggets;
 using Discord;
 using Discord.Interactions;
@@ -47,7 +46,7 @@ namespace Baguettefy
                 bool isNext = data[^2] == "next";
                 var startingIndex = int.Parse(data[^1]);
 
-                if (startingIndex <= NuggetData.ITEMS_PER_PAGE && !isNext)
+                if (startingIndex <= NuggetUtils.ITEMS_PER_PAGE && !isNext)
                 {
                     await arg.UpdateAsync(properties => { });
                     return;
@@ -66,20 +65,17 @@ namespace Baguettefy
                 }
 
                 var items = isNext
-                    ? await NuggetData.GetNextOrderedItemsAsync(_HttpClient, startingIndex)
-                    : await NuggetData.GetPreviousOrderedItemsAsync(_HttpClient, startingIndex-NuggetData.ITEMS_PER_PAGE-1);
+                    ? await NuggetUtils.GetNextOrderedItemsAsync(_HttpClient, startingIndex)
+                    : await NuggetUtils.GetPreviousOrderedItemsAsync(_HttpClient, startingIndex-NuggetUtils.ITEMS_PER_PAGE-1);
 
                 var embeds = new List<EmbedBuilder>();
 
                 foreach (var item in items)
                 {
-                    var nugget = nuggetData.FirstOrDefault(s => s.AnkamaId == item.AnkamaId);
-                    if(nugget == null) continue;
-
                     embeds.Add(new EmbedBuilder()
                         .WithTitle(item.Name)
                         .WithThumbnailUrl(item.ImageUrls.Sd.AbsoluteUri)
-                        .AddField("Nuggets", $"{nugget.Ratio}"));
+                        .AddField("Nuggets", $"{await NuggetUtils.GetNuggetValue(_HttpClient, item.AnkamaId)}"));
                 }
 
                 var lastItemIndex = startingIndex + items.Count;
@@ -109,10 +105,10 @@ namespace Baguettefy
 
                 await arg.ModifyOriginalResponseAsync(properties =>
                 {
-                    var pageNumber = lastItemIndex/NuggetData.ITEMS_PER_PAGE;
+                    var pageNumber = lastItemIndex/NuggetUtils.ITEMS_PER_PAGE;
                     if (pageNumber == 0) pageNumber = 1;
 
-                    properties.Content = $"Page: {pageNumber}/{nuggetData.Count/NuggetData.ITEMS_PER_PAGE}";
+                    properties.Content = $"Page: {pageNumber}/{nuggetData.Count/NuggetUtils.ITEMS_PER_PAGE}";
                     properties.Embeds = embeds.Select(s => s.Build()).ToArray();
                     properties.Components = components.Build();
                 });
