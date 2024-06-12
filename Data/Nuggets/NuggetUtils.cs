@@ -73,7 +73,7 @@ namespace Baguettefy.Data.Nuggets
                 if (!response.IsSuccessStatusCode) continue;
 
                 string data = await response.Content.ReadAsStringAsync();
-                ItemData? itemData = JsonConvert.DeserializeObject<ItemData>(data);
+                ItemData? itemData = ItemData.FromJson(data);
                 if (itemData == null) continue;
 
                 return itemData;
@@ -91,6 +91,7 @@ namespace Baguettefy.Data.Nuggets
             {
                 "https://api.dofusdu.de/dofus2/en/items/resources/{0}",
                 "https://api.dofusdu.de/dofus2/en/items/consumables/{0}",
+                "https://api.dofusdu.de/dofus2/en/items/equipment/{0}",
             };
             
             foreach (var category in categories)
@@ -101,22 +102,9 @@ namespace Baguettefy.Data.Nuggets
                 if (!response.IsSuccessStatusCode) continue;
 
                 string data = await response.Content.ReadAsStringAsync();
-                ItemData? itemData = JsonConvert.DeserializeObject<ItemData>(data);
+                ItemData? itemData = ItemData.FromJson(data);
                 if (itemData == null) continue;
 
-                var nugget = nuggetData.FirstOrDefault(s => s.AnkamaId == itemData.AnkamaId);
-                if (nugget == null) return 0;
-                return nugget.Amount;
-            }
-
-            {
-                string url = $"https://api.dofusdu.de/dofus2/en/items/equipment/{ankamaId}";
-                var response = await client.GetAsync(url);
-                if (!response.IsSuccessStatusCode) return 0;
-                string data = await response.Content.ReadAsStringAsync();
-                ItemData itemData = ItemData.FromJson(data);
-                if (itemData == null) return 0;
-                
                 if (itemData.Recipe == null)
                 {
                     var nugget = nuggetData.FirstOrDefault(s => s.AnkamaId == itemData.AnkamaId);
