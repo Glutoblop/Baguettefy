@@ -93,7 +93,11 @@ namespace Baguettefy.Commands
                     await PopuplateAchievemnetRequiremenets(db, requirements);
                 }
 
-                //var mermaid = requirements.ToMermaid();
+                // ----- 
+
+
+                // ----- CREATE PLANT UML DIAGRAM
+
                 var plant = requirements.ToPlantUml();
 
                 var factory = new RendererFactory();
@@ -178,6 +182,13 @@ namespace Baguettefy.Commands
 
         private async Task PopuplateAchievemnetRequiremenets(IFirebaseDatabase db, Requirements requirements)
         {
+            //Qf=1942&Qf=1945&Qf=1946
+            //PL>179&PO=19414
+
+            //Qf = Quest Finished
+            //PL = Level Required
+            //PO = Possess ItemData
+
             var achievement = await db.GetAsync<AchievementData>($"Achievement/{requirements.AchievementData.Id}");
 
             foreach (var achObj in achievement?.Objectives ?? new List<AchievementObjective>())
