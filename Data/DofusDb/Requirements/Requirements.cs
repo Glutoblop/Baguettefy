@@ -9,10 +9,42 @@
 
     public class Requirements
     {
-        public RequirementInfo QuestData { get; set; }
-        public RequirementInfo AchievementData { get; set; }
+        public RequirementInfo? QuestData { get; set; }
+        public RequirementInfo? AchievementData { get; set; }
 
-        public List<Requirements> Required { get; set; } = new List<Requirements>();
+        public List<long> RequirementIds
+        {
+            get
+            {
+                List<long> ids = new List<long>();
+                PopulateChainIds(this, ids);
+                return ids;
+            }
+        }
+
+        private void PopulateChainIds(Requirements requirements, List<long> chain)
+        {
+            long getId(Requirements req)
+            {
+                if (req.AchievementData != null) return req.AchievementData.Id;
+                return req.QuestData?.Id ?? 0;
+            }
+
+            var chainId = getId(requirements);
+            if (chainId != 0)
+            {
+                chain.Add(chainId);
+            }
+
+            if (requirements.Required == null) return;
+            foreach (var required in requirements.Required)
+            {
+                PopulateChainIds(required, chain);
+            }
+        }
+
+        public List<Requirements>? Required { get; set; } = new List<Requirements>();
+
 
         public string ToMermaid()
         {

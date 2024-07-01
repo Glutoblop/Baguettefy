@@ -1,18 +1,13 @@
 ﻿using Baguettefy.Core.Interfaces;
-using Baguettefy.Data.DofusDb.Achievements;
-using Baguettefy.Data.DofusDb.Requirements;
 using Baguettefy.Data.Quests;
 using Discord;
 using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
-using PlantUml.Net;
 
 namespace Baguettefy.Commands
 {
     public class RequestQuestTranslateCommands : InteractionModuleBase<InteractionContext>
     {
-        static HttpClient client = new HttpClient();
-
         private IServiceProvider _Services;
 
         public RequestQuestTranslateCommands(IServiceProvider services)
