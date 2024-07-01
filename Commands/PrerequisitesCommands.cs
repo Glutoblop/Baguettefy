@@ -128,7 +128,8 @@ namespace Baguettefy.Commands
                 {
                     await ModifyOriginalResponseAsync(properties =>
                     {
-                        properties.Content = $"\ud83e\udd56 Oui Oui Baguette \ud83e\udd56\n";
+                        properties.Content = $"\ud83e\udd56 Non non Baguette \ud83e\udd56\n" +
+                                             $"Something went wrong :(";
                     });
                 }
             }
