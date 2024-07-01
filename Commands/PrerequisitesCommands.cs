@@ -21,7 +21,7 @@ namespace Baguettefy.Commands
         [SlashCommand("prerequisites", "Search an English/French quest name for its prerequisites.", runMode: RunMode.Async)]
         public async Task QuestPrerequisites(string name)
         {
-            await DeferAsync(true);
+            await DeferAsync();
 
             var db = _Services.GetRequiredService<IFirebaseDatabase>();
 
@@ -95,6 +95,7 @@ namespace Baguettefy.Commands
 
                 // ----- 
 
+                await MergeRequirements(db, requirements);
 
                 // ----- CREATE PLANT UML DIAGRAM
 
@@ -110,33 +111,26 @@ namespace Baguettefy.Commands
                 var channel = await Context.Guild.GetChannelAsync(Context.Interaction.ChannelId.Value);
                 if (channel is ITextChannel c)
                 {
-                    IUserMessage? msg = null;
-                    string imageName = "";
-                    if (foundQuest != null)
+                    string imageName = foundQuest?.Name?.En ?? foundAchievement?.Name?.En ?? "ImageName";
+                    await ModifyOriginalResponseAsync(properties =>
                     {
-                        imageName = foundQuest.Name.En;
-                        msg = await c.SendMessageAsync($"# Quest chain found for: {foundQuest.Name.En}");
-                    }
-                    else
-                    {
-                        imageName = foundAchievement.Name.En;
-                        msg = await c.SendMessageAsync($"# Achievement chain found for: {foundAchievement.Name.En}");
-                    }
+                        properties.Content = foundQuest != null
+                            ? $"# Quest chain found for: {foundQuest.Name.En}"
+                            : $"# Achievement chain found for: {foundAchievement.Name.En}";
 
-                    await msg.ModifyAsync(properties =>
-                    {
-                        properties.Attachments =
-                            new[]
-                            {
-                                new FileAttachment(imgStream, $"{imageName}.png")
-                            };
+                        properties.Attachments = new[]
+                        {
+                            new FileAttachment(imgStream, $"{imageName}.png")
+                        };
                     });
                 }
-
-                await ModifyOriginalResponseAsync(properties =>
+                else
                 {
-                    properties.Content = $"\ud83e\udd56 Oui Oui Baguette \ud83e\udd56\n";
-                });
+                    await ModifyOriginalResponseAsync(properties =>
+                    {
+                        properties.Content = $"\ud83e\udd56 Oui Oui Baguette \ud83e\udd56\n";
+                    });
+                }
             }
             catch (Exception e)
             {
@@ -226,6 +220,45 @@ namespace Baguettefy.Commands
                     }
                 }
             }
+        }
+
+        private async Task MergeRequirements(IFirebaseDatabase db, Requirements requirements)
+        {
+            //Find all of the "chains" of requirements 
+
+            List<Requirements> subRequirements = requirements.Required.OrderByDescending(s => s.RequirementIds.Count).ToList();
+
+            List<Requirements> trimmedRequirements = new List<Requirements>();
+
+            //Loop through the chains starting with longest first
+            //If all the current steps are included in an existing chain, then don't keep this chain saved.
+            foreach (var subRequirement in subRequirements)
+            {
+                bool unique = true;
+                foreach (var checkChain in trimmedRequirements)
+                {
+                    foreach (var id in checkChain.RequirementIds)
+                    {
+                        if (!subRequirement.RequirementIds.Contains(id)) continue;
+                        unique = false;
+                        break;
+                    }
+
+                    //If there are unique values in this checkChain, it isnt a duplicate.
+                    if (!unique)
+                    {
+                        break;
+                    }
+                }
+
+                if (unique)
+                {
+                    trimmedRequirements.Add(subRequirement);
+                }
+            }
+
+            requirements.Required = trimmedRequirements;
+
         }
     }
 }
