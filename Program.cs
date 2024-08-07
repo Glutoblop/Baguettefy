@@ -103,7 +103,7 @@ namespace Baguettefy
             await db.Init(databaseUrl, serviceAccount, "CachedDatabase");
 
 #if DEBUG
-            await UpdateDatabase.Update(db);
+            //await UpdateDatabase.Update(db);
 #endif
 
             client.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Log: {msg}"); };
