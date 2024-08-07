@@ -11,7 +11,7 @@ namespace Baguettefy.Commands
         static readonly HttpClient _HttpClient = new HttpClient();
 
 
-        [SlashCommand("item-nuggets", "Aproximately how many nuggets does this item generate?", runMode: RunMode.Async)]
+        [SlashCommand("nuggets_item", "Aproximately how many nuggets does this item generate?", runMode: RunMode.Async)]
         public async Task GetItemNuggets(
             [Summary(name: "itemName", description: "The name of the in English.")] string itemName)
         {
@@ -57,7 +57,7 @@ namespace Baguettefy.Commands
             });
         }
 
-        [SlashCommand("list-nuggets", "Lists all the Nugget/Item Ratios in descending order.", runMode: RunMode.Async)]
+        [SlashCommand("nuggets_list", "Lists all the Nugget/Item Ratios in descending order.", runMode: RunMode.Async)]
         public async Task ListNuggets()
         {
             await DeferAsync(true);
