@@ -51,7 +51,6 @@ namespace Baguettefy
                         .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(),
                             new InteractionServiceConfig() { DefaultRunMode = RunMode.Async }))
                         .AddSingleton<InteractionHandler>()
-                        .AddSingleton<PrefixHandler>()
                         .AddSingleton(x => new CommandService(new CommandServiceConfig()
                         {
                             DefaultRunMode = Discord.Commands.RunMode.Async
@@ -79,8 +78,6 @@ namespace Baguettefy
             var client = services.GetRequiredService<DiscordSocketClient>();
             var sCommands = services.GetRequiredService<InteractionService>();
             await services.GetRequiredService<InteractionHandler>().InitialiseAsync();
-            var pCommands = services.GetRequiredService<PrefixHandler>();
-            await pCommands.InitialiseAsync();
 
             bool forceUpdate = true;
 #if DEBUG
