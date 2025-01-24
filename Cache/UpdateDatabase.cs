@@ -1,6 +1,7 @@
 ﻿using Baguettefy.Core.Interfaces;
 using Baguettefy.Data;
 using Baguettefy.Data.DofusDb.Achievements;
+using Baguettefy.Data.DofusDb.Dungeons;
 using Baguettefy.Data.DofusDb.Quests;
 using Baguettefy.Data.Quests;
 using Newtonsoft.Json;
@@ -25,11 +26,13 @@ namespace Baguettefy.Cache
                 }
             }
 
-            await FetchAchievementCategoriesData(db);
-            await FetchAchievementData(db);
+            //await FetchAchievementCategoriesData(db);
+            //await FetchAchievementData(db);
+            //
+            //await FetchQuestCategoriesData(db);
+            //await FetchQuestData(db);
 
-            await FetchQuestCategoriesData(db);
-            await FetchQuestData(db);
+            await FetchDungeonData(db);
 
             Console.WriteLine($"Completed in :{DateTime.UtcNow - now:g}");
 
@@ -201,6 +204,53 @@ namespace Baguettefy.Cache
                     }
 
                     await Task.Delay(350);
+                }
+            }
+        }
+
+        private static async Task FetchDungeonData(IFirebaseDatabase db)
+        {
+            bool endOfList = false;
+
+            int pageIndex = 0;
+            var pageSize = 50;
+            
+
+            while (!endOfList)
+            {
+                var startIndex = pageIndex * pageSize;
+                var url = $"https://api.dofusdb.fr/dungeons?$";
+                var dungeonURL = $"{url}skip={startIndex}&$sort=-1&$populate=true&$limit={pageSize}&lang=en";
+
+                pageIndex++;
+
+                await Task.Delay(350);
+                HttpResponseMessage achievementResponse = await client.GetAsync(dungeonURL);
+                if (!achievementResponse.IsSuccessStatusCode) continue;
+
+                string json = await achievementResponse.Content.ReadAsStringAsync();
+                AllDungeonData? allDungeons = JsonConvert.DeserializeObject<AllDungeonData>(json);
+
+                if (allDungeons?.Data?.Length > 0)
+                {
+                    foreach (var dungeonData in allDungeons?.Data)
+                    {
+                        var cachedDungeonData = await db.GetAsync<DungeonData>($"Dungeon/{dungeonData.Id}");
+
+                        if (cachedDungeonData == null)
+                        {
+                            Console.WriteLine($"{dungeonData.Name.En} added to cached [{dungeonData.Id}]");
+                            await db.PutAsync($"Dungeon/{dungeonData.Id}", dungeonData);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"{dungeonData.Name.En} already cached [{dungeonData.Id}]");
+                        }
+                    }
+                }
+                else
+                {
+                    endOfList = true;
                 }
             }
         }

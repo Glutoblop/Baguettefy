@@ -1,9 +1,9 @@
 ﻿using Baguettefy.Cache;
-using Baguettefy.Core;
 using Baguettefy.Core.Interfaces;
 using Baguettefy.Core.Logging;
 using Baguettefy.Data;
 using Baguettefy.Data.DofusDb.Achievements;
+using Baguettefy.Data.DofusDb.Dungeons;
 using Baguettefy.Data.DofusDb.Quests;
 using Baguettefy.Data.Nuggets;
 using Baguettefy.Data.Quests;
@@ -93,7 +93,9 @@ namespace Baguettefy
                 {"Quest", new() { { "Type", typeof(QuestData) }, { "ForceUpdate", forceUpdate } }},
 
                 {"AchievementCategories", new() { { "Type", typeof(AllAchievementCategories) }, { "ForceUpdate", forceUpdate } }},
-                {"Achievement", new() { { "Type", typeof(AchievementData) }, { "ForceUpdate", forceUpdate } }}
+                {"Achievement", new() { { "Type", typeof(AchievementData) }, { "ForceUpdate", forceUpdate } }},
+
+                {"Dungeon", new() { { "Type", typeof(DungeonData) }, { "ForceUpdate", forceUpdate } }},
             };
             var databaseUrl = config["firebaseDatabaseUrl"];
             var serviceAccount = config["firebaseServiceAccount"];
