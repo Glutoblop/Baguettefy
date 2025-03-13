@@ -1,11 +1,10 @@
-﻿using System.Reflection;
-using Baguettefy.Core.Interfaces;
+﻿using Baguettefy.Core.Interfaces;
 using Baguettefy.Data.Nuggets;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
+using System.Reflection;
 
 namespace Baguettefy
 {
@@ -33,6 +32,13 @@ namespace Baguettefy
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
             _client.InteractionCreated += HandleInteraction;
             _client.ButtonExecuted += HandleButtonPressed;
+            _client.ModalSubmitted += HandleModalSubmitted;
+        }
+        private async Task HandleInteraction(SocketInteraction arg)
+        {
+            _Logger?.Log($"[HandleInteraction]", ELogType.Log);
+            var dialogueContext = new InteractionContext(_client, arg);
+            await _commands.ExecuteCommandAsync(dialogueContext, _services);
         }
 
         private async Task HandleButtonPressed(SocketMessageComponent arg)
@@ -40,49 +46,82 @@ namespace Baguettefy
             _Logger?.Log($"[HandleButtonPressed]", ELogType.Log);
             try
             {
-                if (!arg.Data.CustomId.StartsWith("nugget|list")) return;
-                var data = arg.Data.CustomId.Split("|");
-                bool isNext = data[^2] == "next";
-                var startingIndex = int.Parse(data[^1]);
-
-                if (startingIndex <= NuggetUtils.ITEMS_PER_PAGE && !isNext)
+                if (arg.Data.CustomId.StartsWith("Translate"))
                 {
-                    await arg.UpdateAsync(properties => { });
-                    return;
-                }
-
-                await arg.DeferAsync(true);
-
-                List<NuggetData>? nuggetData = await NuggetUtils.GetNuggetData(_HttpClient);
-                if (nuggetData == null)
-                {
-                    await arg.ModifyOriginalResponseAsync(properties =>
+                    var subType = arg.Data.CustomId.Split("-")[1];
+                    switch (subType)
                     {
-                        properties.Content = $"❌ Could not find anymore data.";
-                    });
-                    return;
+                        case "Quest":
+                        case "Achievement":
+                        case "Item":
+                        case "Dungeon Name":
+                            {
+                                var modalBuilder = new ModalBuilder()
+                                .WithTitle($"Enter in either French or English")
+                                .WithCustomId($"Translate-{subType}")
+                                .AddTextInput($"What {subType} do you want translated?", $"Translate-{subType}-Input");
+
+                                await arg.RespondWithModalAsync(modalBuilder.Build());
+
+                                break;
+                            }
+                        case "Prerequisites":
+                            {
+                                var modalBuilder = new ModalBuilder()
+                                .WithTitle("Enter Quest/Achievement name in either French or English.")
+                                .WithCustomId("Translate-PreReq")
+                                .AddTextInput($"What Quest/Achievement Prerequisites are you after?", "Translate-PreReq-Input");
+
+                                await arg.RespondWithModalAsync(modalBuilder.Build());
+
+                                break;
+                            }
+                    }
                 }
-
-                var items = isNext
-                    ? await NuggetUtils.GetNextOrderedItemsAsync(_HttpClient, startingIndex)
-                    : await NuggetUtils.GetPreviousOrderedItemsAsync(_HttpClient, startingIndex-NuggetUtils.ITEMS_PER_PAGE-1);
-
-                var embeds = new List<EmbedBuilder>();
-
-                foreach (var item in items)
+                else if (arg.Data.CustomId.StartsWith("nugget|list"))
                 {
-                    embeds.Add(new EmbedBuilder()
-                        .WithTitle(item.Name)
-                        .WithThumbnailUrl(item.ImageUrls.Sd.AbsoluteUri)
-                        .AddField("Nuggets", $"{await NuggetUtils.GetNuggetValue(_HttpClient, item.AnkamaId)}"));
-                }
+                    var data = arg.Data.CustomId.Split("|");
+                    bool isNext = data[^2] == "next";
+                    var startingIndex = int.Parse(data[^1]);
 
-                var lastItemIndex = startingIndex + items.Count;
-                if (!isNext) lastItemIndex = startingIndex - items.Count;
+                    if (startingIndex <= NuggetUtils.ITEMS_PER_PAGE && !isNext)
+                    {
+                        await arg.UpdateAsync(properties => { });
+                        return;
+                    }
 
-                var components = new ComponentBuilder
-                {
-                    ActionRows = new List<ActionRowBuilder>()
+                    await arg.DeferAsync(true);
+
+                    List<NuggetData>? nuggetData = await NuggetUtils.GetNuggetData(_HttpClient);
+                    if (nuggetData == null)
+                    {
+                        await arg.ModifyOriginalResponseAsync(properties =>
+                        {
+                            properties.Content = $"❌ Could not find anymore data.";
+                        });
+                        return;
+                    }
+
+                    var items = isNext
+                        ? await NuggetUtils.GetNextOrderedItemsAsync(_HttpClient, startingIndex)
+                        : await NuggetUtils.GetPreviousOrderedItemsAsync(_HttpClient, startingIndex - NuggetUtils.ITEMS_PER_PAGE - 1);
+
+                    var embeds = new List<EmbedBuilder>();
+
+                    foreach (var item in items)
+                    {
+                        embeds.Add(new EmbedBuilder()
+                            .WithTitle(item.Name)
+                            .WithThumbnailUrl(item.ImageUrls.Sd.AbsoluteUri)
+                            .AddField("Nuggets", $"{await NuggetUtils.GetNuggetValue(_HttpClient, item.AnkamaId)}"));
+                    }
+
+                    var lastItemIndex = startingIndex + items.Count;
+                    if (!isNext) lastItemIndex = startingIndex - items.Count;
+
+                    var components = new ComponentBuilder
+                    {
+                        ActionRows = new List<ActionRowBuilder>()
                     {
                         new()
                         {
@@ -100,18 +139,18 @@ namespace Baguettefy
                             }
                         }
                     }
-                };
+                    };
 
-                await arg.ModifyOriginalResponseAsync(properties =>
-                {
-                    var pageNumber = lastItemIndex/NuggetUtils.ITEMS_PER_PAGE;
-                    if (pageNumber == 0) pageNumber = 1;
+                    await arg.ModifyOriginalResponseAsync(properties =>
+                    {
+                        var pageNumber = lastItemIndex / NuggetUtils.ITEMS_PER_PAGE;
+                        if (pageNumber == 0) pageNumber = 1;
 
-                    properties.Content = $"Page: {pageNumber}/{nuggetData.Count/NuggetUtils.ITEMS_PER_PAGE}";
-                    properties.Embeds = embeds.Select(s => s.Build()).ToArray();
-                    properties.Components = components.Build();
-                });
-
+                        properties.Content = $"Page: {pageNumber}/{nuggetData.Count / NuggetUtils.ITEMS_PER_PAGE}";
+                        properties.Embeds = embeds.Select(s => s.Build()).ToArray();
+                        properties.Components = components.Build();
+                    });
+                }
             }
             catch (Exception ex)
             {
@@ -119,11 +158,24 @@ namespace Baguettefy
             }
         }
 
-        private async Task HandleInteraction(SocketInteraction arg)
+        private async Task HandleModalSubmitted(SocketModal modal)
         {
-            _Logger?.Log($"[HandleInteraction]", ELogType.Log);
-            var dialogueContext = new InteractionContext(_client, arg);
-            await _commands.ExecuteCommandAsync(dialogueContext, _services);
+            _Logger?.Log($"[HandleModalSubmitted]", ELogType.Log);
+
+            if (modal.Data?.CustomId?.StartsWith("Translate-") ?? false)
+            {
+                var subType = modal.Data.CustomId.Split("-")[1];
+                switch (subType)
+                {
+                    case "Quest":
+                    case "Achievement":
+                    case "Item":
+                    case "Dungeon Name":
+                        break;
+                    case "Prerequisites":
+                        break;
+                }
+            }
         }
     }
 }

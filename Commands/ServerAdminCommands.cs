@@ -28,7 +28,7 @@ namespace DofusDailyMonster.Commands
             var componentBuilder = new ComponentBuilder();
             var buttons = new List<IMessageComponent>()
                     {
-                        new ButtonBuilder("Quest", "Translate-Quest", ButtonStyle.Success, emote: new Emoji("📗")).Build(),
+                        new ButtonBuilder("Quest", "Translate-Quest", ButtonStyle.Success, emote: new Emoji("📕")).Build(),
                         new ButtonBuilder("Achievement", "Translate-Achievement", ButtonStyle.Success, emote: new Emoji("🏆")).Build(),
                         new ButtonBuilder("Item", "Translate-Item", ButtonStyle.Success, emote: new Emoji("🛠️")).Build(),
                         new ButtonBuilder("Dungeon Name", "Translate-Dungeon", ButtonStyle.Success, emote: new Emoji("💀")).Build(),
@@ -67,8 +67,8 @@ namespace DofusDailyMonster.Commands
                 var msg = await guildChannel.SendMessageAsync($"# Baguettefy Translation Helper" +
                     $"\nBaguettefy is a Discord translation bot only available inside The Pub.\n\n" +
                     $"It provides English -> French or French -> English translations using the correct Ankama created translation.\n\n" +
-                    $"Google Translate gets you most of the way, but if you need a Quest, Achievement, Resource, Item, NPC or Dungeon name with an" +
-                    $"exact translation, those translations might not match Ankama's wording exactly\n\n" +
+                    $"Google Translate gets you most of the way, but if you need a Quest, Achievement, Resource, Item, NPC or Dungeon Name with an " +
+                    $"exact translation, those translations might not match Ankama's wording perfectly\n\n" +
                     $"This is where we come in, use one of the buttons below to find the translation you need.\n" +
                     $"You can put in French or English and it will give you a private message reply giving you a breakdown of both languages it finds.\n\n\n" +
                     $"⏳May Xelor's Clock Tick For You⌛\n\n\n",

@@ -17,7 +17,7 @@ namespace Baguettefy.Commands
         }
 
         [SlashCommand("translate_achieve", "Search an Achievement either English or French.", runMode: RunMode.Async)]
-        public async Task TranslateQuest(string name)
+        public async Task TranslateAchievement(string name)
         {
             await DeferAsync(true);
 
@@ -25,25 +25,9 @@ namespace Baguettefy.Commands
 
             try
             {
-                AchievementData? foundAchievement = null;
-                await db.GetAllAsync<AchievementData>($"Achievement", (path, item) =>
-                {
-                    if (item.Name.En.ToLowerInvariant().Contains(name.ToLowerInvariant()))
-                    {
-                        foundAchievement = item;
-                        return true;
-                    }
+                var embedBuilder = await FindTranslationData.FindAchievement(db, name);
 
-                    if (item.Name.Fr.ToLowerInvariant().Contains(name.ToLowerInvariant()))
-                    {
-                        foundAchievement = item;
-                        return true;
-                    }
-
-                    return false;
-                });
-
-                if (foundAchievement == null)
+                if (embedBuilder == null)
                 {
                     await ModifyOriginalResponseAsync(properties =>
                     {
@@ -51,26 +35,6 @@ namespace Baguettefy.Commands
                     });
                     return;
                 }
-
-                var embedBuilder = new EmbedBuilder()
-                {
-                    Title = $"Achievement Found",
-                    ThumbnailUrl = "https://api.dofusdu.de/dofus2/img/item/15950-800.png"
-                };
-
-                embedBuilder.WithFields(new[]
-                {
-                    new EmbedFieldBuilder()
-                        .WithName($"English Name")
-                        .WithValue($"{foundAchievement.Name.En}")
-                        .WithIsInline(false),
-
-                    new EmbedFieldBuilder()
-                        .WithName($"French Name")
-                        .WithValue($"{foundAchievement.Name.Fr}")
-                        .WithIsInline(false)
-
-                });
 
                 await ModifyOriginalResponseAsync(properties =>
                 {
