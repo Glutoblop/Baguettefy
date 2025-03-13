@@ -25,25 +25,9 @@ namespace Baguettefy.Commands
 
             try
             {
-                DungeonData? foundDungeon = null;
-                await db.GetAllAsync<DungeonData>($"Dungeon", (path, item) =>
-                {
-                    if (item.Name.En.ToLowerInvariant().Contains(name.ToLowerInvariant()))
-                    {
-                        foundDungeon = item;
-                        return true;
-                    }
+                EmbedBuilder embedBuilder = await FindTranslationData.FindDungeon(db, name);
 
-                    if (item.Name.Fr.ToLowerInvariant().Contains(name.ToLowerInvariant()))
-                    {
-                        foundDungeon = item;
-                        return true;
-                    }
-
-                    return false;
-                });
-
-                if (foundDungeon == null)
+                if (embedBuilder == null)
                 {
                     await ModifyOriginalResponseAsync(properties =>
                     {
@@ -51,31 +35,6 @@ namespace Baguettefy.Commands
                     });
                     return;
                 }
-
-                var embedBuilder = new EmbedBuilder()
-                {
-                    Title = $"Quest Found",
-                    ThumbnailUrl = "https://api.dofusdu.de/dofus3/v1/img/item/84719-128.png"
-                };
-
-                embedBuilder.WithFields(new[]
-                {
-                    new EmbedFieldBuilder()
-                        .WithName($"English Name")
-                        .WithValue($"{foundDungeon.Name.En}")
-                        .WithIsInline(false),
-
-                    new EmbedFieldBuilder()
-                        .WithName($"French Name")
-                        .WithValue($"{foundDungeon.Name.Fr}")
-                        .WithIsInline(false),
-
-                    new EmbedFieldBuilder()
-                        .WithName($"DofusDB Quest Link")
-                        .WithValue($"https://dofusdb.fr/en/database/dungeon/{foundDungeon.Id}")
-                        .WithIsInline(false),
-
-                });
 
                 await ModifyOriginalResponseAsync(properties =>
                 {

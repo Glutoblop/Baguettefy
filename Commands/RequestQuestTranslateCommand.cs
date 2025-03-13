@@ -24,25 +24,8 @@ namespace Baguettefy.Commands
 
             try
             {
-                QuestData? foundQuest = null;
-                await db.GetAllAsync<QuestData>($"Quest", (path, item) =>
-                {
-                    if (item.Name.En.ToLowerInvariant().Contains(name.ToLowerInvariant()))
-                    {
-                        foundQuest = item;
-                        return true;
-                    }
-
-                    if (item.Name.Fr.ToLowerInvariant().Contains(name.ToLowerInvariant()))
-                    {
-                        foundQuest = item;
-                        return true;
-                    }
-
-                    return false;
-                });
-
-                if (foundQuest == null)
+                var embedBuilder = await FindTranslationData.FindQuest(db, name);
+                if (embedBuilder == null)
                 {
                     await ModifyOriginalResponseAsync(properties =>
                     {
@@ -50,31 +33,6 @@ namespace Baguettefy.Commands
                     });
                     return;
                 }
-
-                var embedBuilder = new EmbedBuilder()
-                {
-                    Title = $"Quest Found",
-                    ThumbnailUrl = "https://api.dofusdu.de/dofus2/img/item/25130-800.png"
-                };
-
-                embedBuilder.WithFields(new[]
-                {
-                    new EmbedFieldBuilder()
-                        .WithName($"English Name")
-                        .WithValue($"{foundQuest.Name.En}")
-                        .WithIsInline(false),
-
-                    new EmbedFieldBuilder()
-                        .WithName($"French Name")
-                        .WithValue($"{foundQuest.Name.Fr}")
-                        .WithIsInline(false),
-
-                    new EmbedFieldBuilder()
-                        .WithName($"DofusDB Quest Link")
-                        .WithValue($"https://dofusdb.fr/en/database/quest/{foundQuest.Id}")
-                        .WithIsInline(false),
-
-                });
 
                 await ModifyOriginalResponseAsync(properties =>
                 {

@@ -11,6 +11,7 @@ using Discord;
 using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
+using DofusDailyMonster.Core.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -55,8 +56,9 @@ namespace Baguettefy
                         {
                             DefaultRunMode = Discord.Commands.RunMode.Async
                         }))
-                        .AddSingleton<ILogger>(s => new ConsoleLogger(ConstantData.LogType))
+                        .AddSingleton<ILogger>(s => new ConsoleLogger(ELogType.VeryVerbose))
                         .AddSingleton<IFirebaseDatabase>(s => new CachedFirebaseDatabase())
+                        .AddSingleton<IDatabase>(s => new CachedDatabase())
                     ).Build();
 
                 await RunAsync(host);
@@ -84,8 +86,8 @@ namespace Baguettefy
             forceUpdate = false;
 #endif
 
-            var db = services.GetRequiredService<IFirebaseDatabase>();
-            db.CachedCollections = new Dictionary<string, Dictionary<string, object>>()
+            var firebase = services.GetRequiredService<IFirebaseDatabase>();
+            firebase.CachedCollections = new Dictionary<string, Dictionary<string, object>>()
             {
                 {"Completed", new(){{"Type", typeof(CacheComplete)}, { "ForceUpdate", forceUpdate}}},
 
@@ -99,7 +101,10 @@ namespace Baguettefy
             };
             var databaseUrl = config["firebaseDatabaseUrl"];
             var serviceAccount = config["firebaseServiceAccount"];
-            await db.Init(databaseUrl, serviceAccount, "CachedDatabase");
+            await firebase.Init(databaseUrl, serviceAccount, "CachedDatabase");
+
+            var db = services.GetRequiredService<IDatabase>();
+            await db.Init("LocalCache");
 
 #if DEBUG
             //await UpdateDatabase.Update(db);
