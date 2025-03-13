@@ -1,10 +1,12 @@
 ﻿using Baguettefy.Core.Interfaces;
 using Baguettefy.Data.DofusDb.Achievements;
 using Baguettefy.Data.DofusDb.Dungeons;
+using Baguettefy.Data.DofusDb.NPC;
 using Baguettefy.Data.Items;
 using Baguettefy.Data.Quests;
 using Discord;
 using Newtonsoft.Json;
+using System.Web;
 
 namespace Baguettefy
 {
@@ -163,6 +165,51 @@ namespace Baguettefy
                 .WithIsInline(false)
             );
             return embedBuilder;
+        }
+
+        internal static async Task<EmbedBuilder> GetItemName(string name)
+        {
+            try
+            {
+                var enCodEdNammE = HttpUtility.UrlEncode(name);
+
+                var search_url = $"https://api.dofusdb.fr/npcs?name.fr={enCodEdNammE}";
+
+                NPCData? search_item = null;
+                HttpResponseMessage response = await _Client.GetAsync(search_url);
+                if (response.IsSuccessStatusCode)
+                {
+                    string data = await response.Content.ReadAsStringAsync();
+                    search_item = JsonConvert.DeserializeObject<NpcDetails>(data)?.Data?.FirstOrDefault();
+                }
+
+                if (search_item == null)
+                {
+                    search_url = $"https://api.dofusdb.fr/npcs?name.en={enCodEdNammE}";
+
+                    HttpResponseMessage alt_response = await _Client.GetAsync(search_url);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string data = await alt_response.Content.ReadAsStringAsync();
+                        search_item = JsonConvert.DeserializeObject<NpcDetails>(data)?.Data?.FirstOrDefault();
+                    }
+                }
+
+                if (search_item == null)
+                {
+                    return null;
+                }
+
+                var english_name = search_item.Name.En;
+                var french_name = search_item.Name.Fr;
+                EmbedBuilder embedBuilder = EmbedCreator.CreateTranslatedEmbed("", english_name, french_name);
+                embedBuilder.Title = $"Search: '{name}' found..";
+                return embedBuilder;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
         }
     }
 }

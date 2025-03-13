@@ -32,7 +32,6 @@ namespace DofusDailyMonster.Commands
                         new ButtonBuilder("Achievement", "Translate-Achievement", ButtonStyle.Success, emote: new Emoji("🏆")).Build(),
                         new ButtonBuilder("Item", "Translate-Item", ButtonStyle.Success, emote: new Emoji("🛠️")).Build(),
                         new ButtonBuilder("Dungeon Name", "Translate-Dungeon", ButtonStyle.Success, emote: new Emoji("💀")).Build(),
-                        new ButtonBuilder("Prerequisites", "Translate-Prereq", ButtonStyle.Success, emote: new Emoji("📃")).Build(),
                     };
             var actionRows = new List<ActionRowBuilder> { new ActionRowBuilder().WithComponents(buttons) };
             componentBuilder.WithRows(actionRows);
