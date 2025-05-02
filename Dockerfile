@@ -1,12 +1,12 @@
 ﻿# --------- BUILD STAGE -----------
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 COPY . ./
 RUN dotnet publish Baguettefy.csproj -c Release -o /app/publish
 
 # --------- RUNTIME STAGE -----------
-FROM mcr.microsoft.com/dotnet/runtime:6.0 AS runtime
+FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 WORKDIR /app
 
 RUN apt-get update \
