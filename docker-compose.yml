@@ -6,8 +6,17 @@ services:
     build: .
     volumes:
       - db_cache:/app/CachedDatabase
-    
+    depends_on:
+      - libretranslate
+
+  libretranslate:
+    image: libretranslate/libretranslate
+    restart: always
+    ports:
+      - "5000:5000"  # Optional: exposes it to host, useful for testing
+    environment:
+      - LT_LOAD_ONLY=en,fr
+      - LT_DISABLE_USAGE=true
+
 volumes:
   db_cache:
-    
-    
