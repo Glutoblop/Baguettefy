@@ -80,7 +80,7 @@ namespace Baguettefy.Commands
                     }
                     catch (Exception ex)
                     {
-
+                        Console.WriteLine($"Failed {ex}");
                     }
                     translated.Add($"🥖 Failed to find and translate text :(");
                 }
@@ -116,7 +116,7 @@ namespace Baguettefy.Commands
                 }
                 catch (Exception ex)
                 {
-
+                    Console.WriteLine($"Failed {ex}");
                 }
             }
 
