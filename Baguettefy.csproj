@@ -14,11 +14,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Content\eng.traineddata" />
+    <None Remove="Content\fra.traineddata" />
     <None Remove="res\CachedNuggets.zip" />
     <None Remove="res\nugget.json" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Content\eng.traineddata">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\fra.traineddata">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="res\CachedNuggets.zip">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -39,6 +47,9 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" />
     <PackageReference Include="PlantUml.Net" Version="1.4.80" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.8" />
+    <PackageReference Include="Tesseract" Version="5.2.0" />
+    <PackageReference Include="Tesseract.Drawing" Version="5.2.0" />
   </ItemGroup>
 
   <ItemGroup>
