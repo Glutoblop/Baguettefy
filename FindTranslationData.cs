@@ -38,7 +38,7 @@ namespace Baguettefy
             if (embedBuilder != null)
             {
                 var dlpnLink = await DPLNLink.DLPNLinkFinder.GetFirstSearchResultLinkAsync(foundQuest.Name.Fr);
-                if (dlpnLink == null)
+                if (dlpnLink != null)
                 {
                     embedBuilder.AddField(new EmbedFieldBuilder()
                         .WithName("Dofus Pour Les Noobs Page")
@@ -108,7 +108,7 @@ namespace Baguettefy
             if (embedBuilder != null)
             {
                 var dlpnLink = await DPLNLink.DLPNLinkFinder.GetFirstSearchResultLinkAsync(foundDungeon.Name.Fr);
-                if (dlpnLink == null)
+                if (dlpnLink != null)
                 {
                     embedBuilder.AddField(new EmbedFieldBuilder()
                         .WithName("Dofus Pour Les Noobs Page")
