@@ -5,6 +5,7 @@ using Baguettefy.Data.DofusDb.NPC;
 using Baguettefy.Data.Items;
 using Baguettefy.Data.Quests;
 using Discord;
+using FuzzySharp;
 using Newtonsoft.Json;
 using System.Web;
 
@@ -19,17 +20,15 @@ namespace Baguettefy
             QuestData? foundQuest = null;
             await db.GetAllAsync<QuestData>($"Quest", (path, item) =>
             {
-                if (item.Name.En.ToLowerInvariant().Contains(name.ToLowerInvariant()))
+                var enRatio = Fuzz.Ratio(item.Name.En.ToLowerInvariant(), name.ToLowerInvariant());
+                var frRatio = Fuzz.Ratio(item.Name.Fr.ToLowerInvariant(), name.ToLowerInvariant());
+
+                if (enRatio > 80 || frRatio > 80)
                 {
                     foundQuest = item;
                     return true;
                 }
 
-                if (item.Name.Fr.ToLowerInvariant().Contains(name.ToLowerInvariant()))
-                {
-                    foundQuest = item;
-                    return true;
-                }
                 return false;
             });
 
@@ -54,13 +53,10 @@ namespace Baguettefy
             AchievementData? foundAchievement = null;
             await db.GetAllAsync<AchievementData>($"Achievement", (path, item) =>
             {
-                if (item.Name.En.ToLowerInvariant().Contains(name.ToLowerInvariant()))
-                {
-                    foundAchievement = item;
-                    return true;
-                }
+                var enRatio = Fuzz.Ratio(item.Name.En.ToLowerInvariant(), name.ToLowerInvariant());
+                var frRatio = Fuzz.Ratio(item.Name.Fr.ToLowerInvariant(), name.ToLowerInvariant());
 
-                if (item.Name.Fr.ToLowerInvariant().Contains(name.ToLowerInvariant()))
+                if (enRatio > 80 || frRatio > 80)
                 {
                     foundAchievement = item;
                     return true;
@@ -70,7 +66,7 @@ namespace Baguettefy
             });
             if (foundAchievement == null) return null;
             var embedBuilder = EmbedCreator.CreateTranslatedEmbed("Achievement", foundAchievement.Name.En, foundAchievement.Name.Fr);
-            if(embedBuilder != null)
+            if (embedBuilder != null)
             {
                 var dlpnLink = await DPLNLink.DLPNLinkFinder.GetFirstSearchResultLinkAsync(foundAchievement.Name.Fr);
                 if (dlpnLink != null)
@@ -89,13 +85,10 @@ namespace Baguettefy
             DungeonData? foundDungeon = null;
             await db.GetAllAsync<DungeonData>($"Dungeon", (path, item) =>
             {
-                if (item.Name.En.ToLowerInvariant().Contains(name.ToLowerInvariant()))
-                {
-                    foundDungeon = item;
-                    return true;
-                }
+                var enRatio = Fuzz.Ratio(item.Name.En.ToLowerInvariant(), name.ToLowerInvariant());
+                var frRatio = Fuzz.Ratio(item.Name.Fr.ToLowerInvariant(), name.ToLowerInvariant());
 
-                if (item.Name.Fr.ToLowerInvariant().Contains(name.ToLowerInvariant()))
+                if (enRatio > 80 || frRatio > 80)
                 {
                     foundDungeon = item;
                     return true;
