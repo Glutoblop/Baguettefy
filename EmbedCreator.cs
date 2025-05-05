@@ -24,7 +24,7 @@ namespace Baguettefy
                         .WithValue($"{french}")
                         .WithIsInline(false)
 
-                });
+            });
 
             return embedBuilder;
         }

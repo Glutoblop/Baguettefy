@@ -34,7 +34,19 @@ namespace Baguettefy
             });
 
             if (foundQuest == null) return null;
-            return EmbedCreator.CreateTranslatedEmbed("Quest", foundQuest.Name.En, foundQuest.Name.Fr);
+            var embedBuilder = EmbedCreator.CreateTranslatedEmbed("Quest", foundQuest.Name.En, foundQuest.Name.Fr);
+            if (embedBuilder != null)
+            {
+                var dlpnLink = await DPLNLink.DLPNLinkFinder.GetFirstSearchResultLinkAsync(foundQuest.Name.Fr);
+                if (dlpnLink == null)
+                {
+                    embedBuilder.AddField(new EmbedFieldBuilder()
+                        .WithName("Dofus Pour Les Noobs Page")
+                        .WithValue(dlpnLink)
+                    );
+                }
+            }
+            return embedBuilder;
         }
 
         public static async Task<EmbedBuilder> FindAchievement(IFirebaseDatabase db, string name)
@@ -57,7 +69,19 @@ namespace Baguettefy
                 return false;
             });
             if (foundAchievement == null) return null;
-            return EmbedCreator.CreateTranslatedEmbed("Achievement", foundAchievement.Name.En, foundAchievement.Name.Fr);
+            var embedBuilder = EmbedCreator.CreateTranslatedEmbed("Achievement", foundAchievement.Name.En, foundAchievement.Name.Fr);
+            if(embedBuilder != null)
+            {
+                var dlpnLink = await DPLNLink.DLPNLinkFinder.GetFirstSearchResultLinkAsync(foundAchievement.Name.Fr);
+                if (dlpnLink != null)
+                {
+                    embedBuilder.AddField(new EmbedFieldBuilder()
+                        .WithName("Dofus Pour Les Noobs Page")
+                        .WithValue(dlpnLink)
+                    );
+                }
+            }
+            return embedBuilder;
         }
 
         internal static async Task<EmbedBuilder> FindDungeon(IFirebaseDatabase db, string name)
@@ -80,7 +104,19 @@ namespace Baguettefy
                 return false;
             });
             if (foundDungeon == null) return null;
-            return EmbedCreator.CreateTranslatedEmbed("Dungeon", foundDungeon.Name.En, foundDungeon.Name.Fr);
+            var embedBuilder = EmbedCreator.CreateTranslatedEmbed("Dungeon", foundDungeon.Name.En, foundDungeon.Name.Fr);
+            if (embedBuilder != null)
+            {
+                var dlpnLink = await DPLNLink.DLPNLinkFinder.GetFirstSearchResultLinkAsync(foundDungeon.Name.Fr);
+                if (dlpnLink == null)
+                {
+                    embedBuilder.AddField(new EmbedFieldBuilder()
+                        .WithName("Dofus Pour Les Noobs Page")
+                        .WithValue(dlpnLink)
+                    );
+                }
+            }
+            return embedBuilder;
         }
 
         internal static async Task<EmbedBuilder> FindItem(string name)

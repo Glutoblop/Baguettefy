@@ -26,11 +26,11 @@ namespace Baguettefy.Cache
                 }
             }
 
-            //await FetchAchievementCategoriesData(db);
-            //await FetchAchievementData(db);
-            //
-            //await FetchQuestCategoriesData(db);
-            //await FetchQuestData(db);
+            await FetchAchievementCategoriesData(db);
+            await FetchAchievementData(db);
+            
+            await FetchQuestCategoriesData(db);
+            await FetchQuestData(db);
 
             await FetchDungeonData(db);
 

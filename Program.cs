@@ -107,7 +107,7 @@ namespace Baguettefy
             await db.Init("LocalCache");
 
 #if DEBUG
-            //await UpdateDatabase.Update(db);
+            //await UpdateDatabase.Update(firebase);
 #endif
 
             client.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Log: {msg}"); };
