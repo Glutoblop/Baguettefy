@@ -33,7 +33,11 @@ namespace Baguettefy
             _client.InteractionCreated += HandleInteraction;
             _client.ButtonExecuted += HandleButtonPressed;
             _client.ModalSubmitted += HandleModalSubmitted;
+
+            _client.MessageReceived += HandleMessageReceived;
+            _client.MessageUpdated += HandleMessageUpdated;
         }
+
         private async Task HandleInteraction(SocketInteraction arg)
         {
             _Logger?.Log($"[HandleInteraction]", ELogType.Log);
@@ -202,5 +206,28 @@ namespace Baguettefy
                 }
             }
         }
+
+        private async Task HandleMessageReceived(SocketMessage message)
+        {
+            try
+            {
+                var txt = message.Content.Trim().ToLowerInvariant();
+                var words = txt.Split(" ");
+                if (words.Contains("shadow") || words.Contains("shadows"))
+                {
+                    await message.AddReactionAsync(new Emoji("🥳"));
+                }
+            }
+            catch (Exception e)
+            {
+
+            }
+        }
+
+        private async Task HandleMessageUpdated(Cacheable<IMessage, ulong> cacheable, SocketMessage message, ISocketMessageChannel channel)
+        {
+            await HandleMessageReceived(message);
+        }
+
     }
 }
