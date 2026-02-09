@@ -218,7 +218,7 @@ namespace Baguettefy
                 {
                     await message.AddReactionAsync(new Emoji("🥳"));
                 }
-                else if (txt.Contains("unleash"))
+                if (txt.Contains("unleash"))
                 {
                     await message.AddReactionAsync(new Emoji("🐺"));
                 }
