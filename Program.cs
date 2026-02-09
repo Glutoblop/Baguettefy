@@ -46,7 +46,7 @@ namespace Baguettefy
                         .AddSingleton(config)
                         .AddSingleton(x => new DiscordSocketClient(new DiscordSocketConfig
                         {
-                            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent,
+                            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent | GatewayIntents.GuildMembers,
                             AlwaysDownloadUsers = true
                         }))
                         .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(),
