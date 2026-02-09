@@ -5,6 +5,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace Baguettefy
 {
@@ -118,17 +119,17 @@ namespace Baguettefy
                     {
                         new()
                         {
-                            Components = new List<IMessageComponent>()
+                            Components = new List<IMessageComponentBuilder>()
                             {
                                 new ButtonBuilder()
                                     .WithCustomId($"nugget|list|prev|{lastItemIndex}")
                                     .WithLabel("Previous")
-                                    .WithStyle(ButtonStyle.Success).Build(),
+                                    .WithStyle(ButtonStyle.Success),
 
                                 new ButtonBuilder()
                                     .WithCustomId($"nugget|list|next|{lastItemIndex}")
                                     .WithLabel("Next")
-                                    .WithStyle(ButtonStyle.Success).Build()
+                                    .WithStyle(ButtonStyle.Success)
                             }
                         }
                     }
@@ -212,10 +213,14 @@ namespace Baguettefy
             try
             {
                 var txt = message.Content.Trim().ToLowerInvariant();
-                var words = txt.Split(" ");
-                if (words.Contains("shadow") || words.Contains("shadows"))
+
+                if (Regex.IsMatch(txt, @"\bshadow\b"))
                 {
                     await message.AddReactionAsync(new Emoji("🥳"));
+                }
+                else if (Regex.IsMatch(txt, @"\b!unleash\b"))
+                {
+                    await message.AddReactionAsync(new Emoji("🐺"));
                 }
             }
             catch (Exception e)

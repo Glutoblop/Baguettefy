@@ -99,17 +99,17 @@ namespace Baguettefy.Commands
                 {
                     new()
                     {
-                        Components = new List<IMessageComponent>()
+                        Components = new List<IMessageComponentBuilder>()
                         {
                             new ButtonBuilder()
                                 .WithCustomId($"nugget|list|prev|{NuggetUtils.ITEMS_PER_PAGE}")
                                 .WithLabel("Prev")
-                                .WithStyle(ButtonStyle.Success).Build(),
+                                .WithStyle(ButtonStyle.Success),
 
                             new ButtonBuilder()
                                 .WithCustomId($"nugget|list|next|{NuggetUtils.ITEMS_PER_PAGE}")
                                 .WithLabel("Next")
-                                .WithStyle(ButtonStyle.Success).Build()
+                                .WithStyle(ButtonStyle.Success)
                         }
                     }
                 }

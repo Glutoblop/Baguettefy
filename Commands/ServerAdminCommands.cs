@@ -26,13 +26,13 @@ namespace DofusDailyMonster.Commands
             var db = _Services.GetRequiredService<IDatabase>();
 
             var componentBuilder = new ComponentBuilder();
-            var buttons = new List<IMessageComponent>()
-                    {
-                        new ButtonBuilder("Quest", "Translate-Quest", ButtonStyle.Success, emote: new Emoji("📕")).Build(),
-                        new ButtonBuilder("Achievement", "Translate-Achievement", ButtonStyle.Success, emote: new Emoji("🏆")).Build(),
-                        new ButtonBuilder("Item", "Translate-Item", ButtonStyle.Success, emote: new Emoji("🛠️")).Build(),
-                        new ButtonBuilder("Dungeon Name", "Translate-Dungeon", ButtonStyle.Success, emote: new Emoji("💀")).Build(),
-                    };
+            var buttons = new List<IMessageComponentBuilder>()
+            {
+                new ButtonBuilder("Quest", "Translate-Quest", ButtonStyle.Success, emote: new Emoji("📕")),
+                new ButtonBuilder("Achievement", "Translate-Achievement", ButtonStyle.Success, emote: new Emoji("🏆")),
+                new ButtonBuilder("Item", "Translate-Item", ButtonStyle.Success, emote: new Emoji("🛠️")),
+                new ButtonBuilder("Dungeon Name", "Translate-Dungeon", ButtonStyle.Success, emote: new Emoji("💀")),
+            };
             var actionRows = new List<ActionRowBuilder> { new ActionRowBuilder().WithComponents(buttons) };
             componentBuilder.WithRows(actionRows);
 
