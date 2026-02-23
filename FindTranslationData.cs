@@ -15,7 +15,7 @@ namespace Baguettefy
     {
         static readonly HttpClient _Client = new HttpClient();
 
-        public static async Task<EmbedBuilder> FindQuest(IFirebaseDatabase db, string name)
+        public static async Task<EmbedBuilder> FindQuest(IDatabase db, string name)
         {
             QuestData? foundQuest = null;
             await db.GetAllAsync<QuestData>($"Quest", (path, item) =>
@@ -48,7 +48,7 @@ namespace Baguettefy
             return embedBuilder;
         }
 
-        public static async Task<EmbedBuilder> FindAchievement(IFirebaseDatabase db, string name)
+        public static async Task<EmbedBuilder> FindAchievement(IDatabase db, string name)
         {
             AchievementData? foundAchievement = null;
             await db.GetAllAsync<AchievementData>($"Achievement", (path, item) =>
@@ -80,7 +80,7 @@ namespace Baguettefy
             return embedBuilder;
         }
 
-        internal static async Task<EmbedBuilder> FindDungeon(IFirebaseDatabase db, string name)
+        internal static async Task<EmbedBuilder> FindDungeon(IDatabase db, string name)
         {
             DungeonData? foundDungeon = null;
             await db.GetAllAsync<DungeonData>($"Dungeon", (path, item) =>

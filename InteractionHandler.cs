@@ -1,5 +1,4 @@
 ﻿using Baguettefy.Core.Interfaces;
-using Baguettefy.Data.Nuggets;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -72,79 +71,6 @@ namespace Baguettefy
                             }
                     }
                 }
-                else if (arg.Data.CustomId.StartsWith("nugget|list"))
-                {
-                    var data = arg.Data.CustomId.Split("|");
-                    bool isNext = data[^2] == "next";
-                    var startingIndex = int.Parse(data[^1]);
-
-                    if (startingIndex <= NuggetUtils.ITEMS_PER_PAGE && !isNext)
-                    {
-                        await arg.UpdateAsync(properties => { });
-                        return;
-                    }
-
-                    await arg.DeferAsync(true);
-
-                    List<NuggetData>? nuggetData = await NuggetUtils.GetNuggetData(_HttpClient);
-                    if (nuggetData == null)
-                    {
-                        await arg.ModifyOriginalResponseAsync(properties =>
-                        {
-                            properties.Content = $"❌ Could not find anymore data.";
-                        });
-                        return;
-                    }
-
-                    var items = isNext
-                        ? await NuggetUtils.GetNextOrderedItemsAsync(_HttpClient, startingIndex)
-                        : await NuggetUtils.GetPreviousOrderedItemsAsync(_HttpClient, startingIndex - NuggetUtils.ITEMS_PER_PAGE - 1);
-
-                    var embeds = new List<EmbedBuilder>();
-
-                    foreach (var item in items)
-                    {
-                        embeds.Add(new EmbedBuilder()
-                            .WithTitle(item.Name)
-                            .WithThumbnailUrl(item.ImageUrls.Sd.AbsoluteUri)
-                            .AddField("Nuggets", $"{await NuggetUtils.GetNuggetValue(_HttpClient, item.AnkamaId)}"));
-                    }
-
-                    var lastItemIndex = startingIndex + items.Count;
-                    if (!isNext) lastItemIndex = startingIndex - items.Count;
-
-                    var components = new ComponentBuilder
-                    {
-                        ActionRows = new List<ActionRowBuilder>()
-                    {
-                        new()
-                        {
-                            Components = new List<IMessageComponentBuilder>()
-                            {
-                                new ButtonBuilder()
-                                    .WithCustomId($"nugget|list|prev|{lastItemIndex}")
-                                    .WithLabel("Previous")
-                                    .WithStyle(ButtonStyle.Success),
-
-                                new ButtonBuilder()
-                                    .WithCustomId($"nugget|list|next|{lastItemIndex}")
-                                    .WithLabel("Next")
-                                    .WithStyle(ButtonStyle.Success)
-                            }
-                        }
-                    }
-                    };
-
-                    await arg.ModifyOriginalResponseAsync(properties =>
-                    {
-                        var pageNumber = lastItemIndex / NuggetUtils.ITEMS_PER_PAGE;
-                        if (pageNumber == 0) pageNumber = 1;
-
-                        properties.Content = $"Page: {pageNumber}/{nuggetData.Count / NuggetUtils.ITEMS_PER_PAGE}";
-                        properties.Embeds = embeds.Select(s => s.Build()).ToArray();
-                        properties.Components = components.Build();
-                    });
-                }
             }
             catch (Exception ex)
             {
@@ -161,7 +87,7 @@ namespace Baguettefy
                 await modal.DeferAsync(true);
                 var msg = await modal.FollowupAsync($"Thinking.. 💭", ephemeral: true);
 
-                var db = _Services.GetRequiredService<IFirebaseDatabase>();
+                var db = _Services.GetRequiredService<IDatabase>();
                 EmbedBuilder embedBuilder = null;
                 var value = modal.Data.Components.First().Value;
 

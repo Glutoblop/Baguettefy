@@ -23,7 +23,7 @@ namespace Baguettefy.Commands
         {
             await DeferAsync();
 
-            var db = _Services.GetRequiredService<IFirebaseDatabase>();
+            var db = _Services.GetRequiredService<IDatabase>();
 
             QuestData? foundQuest = null;
             await db.GetAllAsync<QuestData>($"Quest", (path, item) =>
@@ -143,7 +143,7 @@ namespace Baguettefy.Commands
             }
         }
 
-        private async Task PopulateQuestRequirements(IFirebaseDatabase db, Requirements requirements)
+        private async Task PopulateQuestRequirements(IDatabase db, Requirements requirements)
         {
             //Qf=1942&Qf=1945&Qf=1946
             //PL>179&PO=19414
@@ -175,7 +175,7 @@ namespace Baguettefy.Commands
 
         }
 
-        private async Task PopuplateAchievemnetRequiremenets(IFirebaseDatabase db, Requirements requirements)
+        private async Task PopuplateAchievemnetRequiremenets(IDatabase db, Requirements requirements)
         {
             //Qf=1942&Qf=1945&Qf=1946
             //PL>179&PO=19414
@@ -223,7 +223,7 @@ namespace Baguettefy.Commands
             }
         }
 
-        private async Task MergeRequirements(IFirebaseDatabase db, Requirements requirements)
+        private async Task MergeRequirements(IDatabase db, Requirements requirements)
         {
             //Find all of the "chains" of requirements 
 

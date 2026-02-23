@@ -12,7 +12,7 @@ namespace Baguettefy.Cache
     {
         static HttpClient client = new HttpClient();
 
-        public static async Task Update(IFirebaseDatabase db, bool force = false)
+        public static async Task Update(IDatabase db, bool force = false)
         {
             DateTime now = DateTime.UtcNow;
 
@@ -44,7 +44,7 @@ namespace Baguettefy.Cache
 
         }
 
-        private static async Task FetchQuestCategoriesData(IFirebaseDatabase db)
+        private static async Task FetchQuestCategoriesData(IDatabase db)
         {
             AllQuestCategories allQuestCategories = null;
 
@@ -73,7 +73,7 @@ namespace Baguettefy.Cache
             await db.PutAsync($"QuestCategories", allQuestCategories);
         }
 
-        private static async Task FetchQuestData(IFirebaseDatabase db)
+        private static async Task FetchQuestData(IDatabase db)
         {
             var questCategories = await db.GetAsync<AllQuestCategories>($"QuestCategories");
             foreach (var questCategory in questCategories.Data)
@@ -115,7 +115,7 @@ namespace Baguettefy.Cache
             }
         }
 
-        private static async Task FetchAchievementCategoriesData(IFirebaseDatabase db)
+        private static async Task FetchAchievementCategoriesData(IDatabase db)
         {
             AllAchievementCategories allAchievementCategories = null;
             bool validResponse = true;
@@ -149,7 +149,7 @@ namespace Baguettefy.Cache
             await db.PutAsync($"AchievementCategories", allAchievementCategories);
         }
 
-        private static async Task FetchAchievementData(IFirebaseDatabase db)
+        private static async Task FetchAchievementData(IDatabase db)
         {
             var achievementCategories = await db.GetAsync<AllAchievementCategories>($"AchievementCategories");
             foreach (var categoryData in achievementCategories.Data)
@@ -208,7 +208,7 @@ namespace Baguettefy.Cache
             }
         }
 
-        private static async Task FetchDungeonData(IFirebaseDatabase db)
+        private static async Task FetchDungeonData(IDatabase db)
         {
             bool endOfList = false;
 

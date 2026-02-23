@@ -1,17 +1,10 @@
 ﻿using Baguettefy.Cache;
 using Baguettefy.Core.Interfaces;
 using Baguettefy.Core.Logging;
-using Baguettefy.Data;
-using Baguettefy.Data.DofusDb.Achievements;
-using Baguettefy.Data.DofusDb.Dungeons;
-using Baguettefy.Data.DofusDb.Quests;
-using Baguettefy.Data.Nuggets;
-using Baguettefy.Data.Quests;
 using Discord;
 using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
-using DofusDailyMonster.Core.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -24,15 +17,17 @@ namespace Baguettefy
     {
         private static bool clientReady = false;
 
-        public static Task Main() => new Program().MainAsync();
+        public static Task Main(string[] args) => new Program().MainAsync(args);
 
-        public async Task MainAsync()
+        static bool HasFlag(string[] args, string flag)
+        {
+            return args.Any(a =>
+                string.Equals(a, flag, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public async Task MainAsync(string[] args)
         {
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings { DateTimeZoneHandling = DateTimeZoneHandling.Utc };
-
-            //await GenerateNuggetZip.Generate();
-
-            await NuggetUtils.Init();
 
             try
             {
@@ -57,11 +52,10 @@ namespace Baguettefy
                             DefaultRunMode = Discord.Commands.RunMode.Async
                         }))
                         .AddSingleton<ILogger>(s => new ConsoleLogger(ELogType.VeryVerbose))
-                        .AddSingleton<IFirebaseDatabase>(s => new CachedFirebaseDatabase())
                         .AddSingleton<IDatabase>(s => new CachedDatabase())
                     ).Build();
 
-                await RunAsync(host);
+                await RunAsync(args, host);
             }
             catch (Exception e)
             {
@@ -70,7 +64,7 @@ namespace Baguettefy
             }
         }
 
-        public async Task RunAsync(IHost host)
+        public async Task RunAsync(string[] args, IHost host)
         {
             using IServiceScope serviceScope = host.Services.CreateScope();
             IServiceProvider services = serviceScope.ServiceProvider;
@@ -81,34 +75,11 @@ namespace Baguettefy
             var sCommands = services.GetRequiredService<InteractionService>();
             await services.GetRequiredService<InteractionHandler>().InitialiseAsync();
 
-            bool forceUpdate = true;
-#if DEBUG
-            forceUpdate = false;
-#endif
-
-            var firebase = services.GetRequiredService<IFirebaseDatabase>();
-            firebase.CachedCollections = new Dictionary<string, Dictionary<string, object>>()
-            {
-                {"Completed", new(){{"Type", typeof(CacheComplete)}, { "ForceUpdate", forceUpdate}}},
-
-                {"QuestCategories", new() { { "Type", typeof(AllQuestCategories) }, {"ForceUpdate", forceUpdate}}},
-                {"Quest", new() { { "Type", typeof(QuestData) }, { "ForceUpdate", forceUpdate } }},
-
-                {"AchievementCategories", new() { { "Type", typeof(AllAchievementCategories) }, { "ForceUpdate", forceUpdate } }},
-                {"Achievement", new() { { "Type", typeof(AchievementData) }, { "ForceUpdate", forceUpdate } }},
-
-                {"Dungeon", new() { { "Type", typeof(DungeonData) }, { "ForceUpdate", forceUpdate } }},
-            };
-            var databaseUrl = config["firebaseDatabaseUrl"];
-            var serviceAccount = config["firebaseServiceAccount"];
-            await firebase.Init(databaseUrl, serviceAccount, "CachedDatabase");
-
             var db = services.GetRequiredService<IDatabase>();
             await db.Init("LocalCache");
 
-#if DEBUG
-            //await UpdateDatabase.Update(firebase);
-#endif
+            bool force = HasFlag(args, "-forceupdate");
+            await UpdateDatabase.Update(db, force); 
 
             client.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Log: {msg}"); };
             sCommands.Log += async (LogMessage msg) => { Console.WriteLine($"[{DateTime.Now:t}] Interaction: {msg}"); };

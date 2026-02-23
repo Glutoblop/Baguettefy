@@ -1,4 +1,4 @@
-﻿using DofusDailyMonster.Core.Interfaces;
+﻿using Baguettefy.Core.Interfaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -14,6 +14,8 @@ namespace Baguettefy.Cache
         private static readonly SemaphoreSlim _SemaphoreSlim = new SemaphoreSlim(1, 1);
 
         private string _baseDirectory = "CachedDatabase";
+
+        public event Action<KeyValuePair<string, object>> OnDataPut;
 
         public Dictionary<string, Dictionary<string, object>> CachedCollections { get; set; } = new();
 

@@ -1,11 +1,11 @@
-﻿using Discord;
+﻿using Baguettefy.Core.Interfaces;
+using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using DofusDailyMonster.Core.Interfaces;
 using ImageMagick;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DofusDailyMonster.Commands
+namespace Baguettefy.Commands
 {
     [Discord.Commands.RequireContext(Discord.Commands.ContextType.Guild)]
     [Discord.Commands.RequireUserPermission(ChannelPermission.ManageChannels)]

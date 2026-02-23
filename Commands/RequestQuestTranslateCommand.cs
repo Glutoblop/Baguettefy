@@ -20,7 +20,7 @@ namespace Baguettefy.Commands
         {
             await DeferAsync(true);
 
-            var db = _Services.GetRequiredService<IFirebaseDatabase>();
+            var db = _Services.GetRequiredService<IDatabase>();
 
             try
             {
