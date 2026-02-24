@@ -2,18 +2,22 @@ name: baguettefy
 
 services:
   baguettefy:
+    container_name: baguettefy
     restart: always
-    build: .
+    build:
+      context: https://gitlab.com/nyetools/baguettefy.git#main
     volumes:
       - db_cache:/app/CachedDatabase
+      - ./config.json:/app/config.json
     depends_on:
       - libretranslate
 
   libretranslate:
     image: libretranslate/libretranslate
+    container_name: libretranslate
     restart: always
     ports:
-      - "5511:5511"  # Optional: exposes it to host, useful for testing
+      - "5511:5511"
     environment:
       - LT_LOAD_ONLY=en,fr
       - LT_DISABLE_USAGE=true
