@@ -5,7 +5,7 @@ services:
     container_name: baguettefy
     restart: always
     build:
-      context: https://gitlab.com/nyetools/baguettefy.git#main
+      context: https://github.com/Glutoblop/Baguettefy.git#main
     volumes:
       - db_cache:/app/CachedDatabase
       - ./config.json:/app/config.json
