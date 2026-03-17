@@ -1,92 +1,94 @@
-# DofusLFG
+# Baguettefy — Dofus Translation Bot
 
+A Discord bot for Dofus players that provides accurate English ↔ French translations using the official Ankama-sourced data from [dofusdb.fr](https://dofusdb.fr). Google Translate gets you most of the way, but quest names, achievement titles, item names, and dungeon names often don't match Ankama's exact wording — Baguettefy does.
 
+## Features
 
-## Getting started
+- **Game content lookup** — search by English or French name and get both translations for quests, achievements, items, dungeons, and NPCs.
+- **Prerequisite chains** — given a quest or achievement name, generates a full dependency diagram (as a PNG) showing every quest/achievement that must be completed first.
+- **Message translation** — right-click any Discord message to translate it French → English via LibreTranslate. Works on plain text and on images (uses Tesseract OCR to extract text from screenshots before translating).
+- **Interactive translation panel** — post a pinned message with buttons so users can trigger lookups without knowing the slash commands.
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## How it works
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+On startup the bot fetches all quest, achievement, and dungeon data from the dofusdb.fr API and stores it in a local cache. The cache is automatically refreshed every 30 days. All translation lookups use this local cache, so they are fast and work offline once populated.
 
-## Add your files
+Free-text translation (message and image translate) is handled by a self-hosted [LibreTranslate](https://libretranslate.com/) instance that runs as a sidecar container.
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+## Prerequisites
 
+- [Docker](https://docs.docker.com/get-docker/) (recommended) or .NET 9 SDK
+- A Discord bot token
+
+## Setup
+
+### 1. Create a Discord bot
+
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and create a new application.
+2. Under **Bot**, create a bot and copy the token.
+3. Enable the **Message Content Intent** under **Privileged Gateway Intents**.
+4. Under **OAuth2 → URL Generator**, select the `bot` and `applications.commands` scopes, and at minimum: Send Messages, Read Message History, Attach Files, Use Application Commands.
+5. Use the generated URL to invite the bot to your server.
+
+### 2. Configure `config.json`
+
+Create `config.json` next to `docker-compose.yml`:
+
+```json
+{
+  "discordtoken": "YOUR_DISCORD_BOT_TOKEN"
+}
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/nyetools/dofus-lfg.git
-git branch -M main
-git push -uf origin main
+
+## Running
+
+### With Docker (recommended)
+
+The `docker-compose.yml` pulls the bot directly from GitHub and spins up LibreTranslate alongside it.
+
+```bash
+docker-compose up -d
 ```
 
-## Integrate with your tools
+The game data cache is persisted in a Docker volume (`db_cache`). The `config.json` file is bind-mounted from the host.
 
-- [ ] [Set up project integrations](https://gitlab.com/nyetools/dofus-lfg/-/settings/integrations)
+### Without Docker
 
-## Collaborate with your team
+A LibreTranslate instance must be running locally on port `5000` before starting the bot.
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+```bash
+dotnet run
+```
 
-## Test and Deploy
+To force a full refresh of the game data cache on startup:
 
-Use the built-in continuous integration in GitLab.
+```bash
+dotnet run -- -forceupdate
+```
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+## Discord commands
 
-***
+### Slash commands (available to all members)
 
-# Editing this README
+| Command | Description |
+|---|---|
+| `/translate_item <name>` | Look up an item by English or French name and return both translations. |
+| `/translate_quest <name>` | Look up a quest by English or French name and return both translations. |
+| `/translate_achieve <name>` | Look up an achievement by English or French name and return both translations. |
+| `/translate_dungeon <name>` | Look up a dungeon by English or French name and return both translations. |
+| `/translate_npc <name>` | Look up an NPC by name and return both translations. |
+| `/prerequisites <name>` | Given a quest or achievement name (English or French), generates a PNG diagram of its full prerequisite chain. |
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### Admin commands
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+Require the **Manage Channels** permission.
 
-## Name
-Choose a self-explaining name for your project.
+| Command | Description |
+|---|---|
+| `/host_translations` | Posts a persistent message with Quest / Achievement / Item / Dungeon Name buttons in the current channel. Users click a button to open a modal and get a translation without using slash commands directly. |
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+### Context menu commands
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+Right-click any message → **Apps** → **Translate**
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Translates the message content from French to English. If the message contains image attachments, the bot uses OCR to extract French text from each image before translating.
